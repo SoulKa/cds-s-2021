@@ -76,7 +76,7 @@ int main() {
     assert(cpus > 0 && cpus <= 64);
     fprintf(stderr, "Running on %d CPUs\n", cpus);
 
-    long unsigned int d = 1, n = 1; cpus = 1;
+    long unsigned int d = 1, n = 1;
 
     // read input
     cin >> d >> n;
