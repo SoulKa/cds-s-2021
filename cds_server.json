@@ -1,3 +1,4 @@
 [
-	["echo", "/bin/cat"]
+	["echo", "/bin/cat"],
+	["mopp-2018-t0-harmonic-progression-sum", "harmonic-progression-sum"]
 ]
