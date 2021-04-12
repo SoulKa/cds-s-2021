@@ -11,6 +11,7 @@ RUN apt install -y build-essential
 # task 1
 COPY ./tasks/mopp-2018-t0-harmonic-progression-sum /tmp/task
 RUN cd /tmp/task && \
+    make clean && \
     make && \
     cp harmonic-progression-sum /usr/local/bin/ && \
     rm -rf /tmp/task
