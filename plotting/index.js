@@ -74,7 +74,10 @@ async function main() {
                     }],
                     layout: {
                         xaxis: {
-                            title: "CPU-Cores"
+                            title: "CPU-Cores",
+                            tickvals: x,
+                            tickmode: "array",
+                            type: "log"
                         },
                         yaxis: {
                             title: "Speedup"
