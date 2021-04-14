@@ -23,9 +23,15 @@ mopp-2018-t0-harmonic-progression-sum; 1; 48; 6561099
 mopp-2018-t0-harmonic-progression-sum; 1; 56; 5672094
 ```
 
-**The graph:**
+**Speedup Graph:**
 
-![Harmonic Progression Sum Performance](plotting/plots/harmonic-progression.png)
+![Harmonic Progression Sum Performance](plotting/plots/harmonic-progression-scaling.png)
+
+**Amdahl's law with measurements:**
+
+![Amdahl's Law](plotting/plots/harmonic-progression-amdahls-law.png)
+
+The graph contains the measurements from above as well as two flows of **Amdahl's Law**. The first one is calculated from the speedup **with 28 cores**, the second form the speedup **with 56 cores**.
 
 ## Task 2:
 

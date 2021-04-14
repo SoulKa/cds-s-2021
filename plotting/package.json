@@ -10,5 +10,8 @@
   "license": "ISC",
   "dependencies": {
     "plotly": "^1.0.6"
+  },
+  "devDependencies": {
+    "@types/plotly.js": "^1.54.10"
   }
 }
