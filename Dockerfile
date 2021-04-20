@@ -15,3 +15,19 @@ RUN cd /tmp/task && \
     make && \
     cp harmonic-progression-sum /usr/local/bin/ && \
     rm -rf /tmp/task
+
+# task 2
+COPY ./tasks/mopp-2017-t3-mandelbrot-set /tmp/task
+RUN cd /tmp/task && \
+    make clean && \
+    make && \
+    cp mandelbrot /usr/local/bin/ && \
+    rm -rf /tmp/task
+
+# task 3
+COPY ./tasks/mopp-2018-t3-himeno /tmp/task
+RUN cd /tmp/task && \
+    make clean && \
+    make && \
+    cp himeno /usr/local/bin/ && \
+    rm -rf /tmp/task
