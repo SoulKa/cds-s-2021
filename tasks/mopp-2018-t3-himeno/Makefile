@@ -1,4 +1,4 @@
-CFLAGS=-O3 -Wall
+CFLAGS=-O0 -Wall
 CC=gcc
 RM=rm -f
 EXEC=himeno
