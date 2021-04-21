@@ -30,8 +30,8 @@ void calculate( unsigned int r, unsigned int c, s_constants_t *constants ) {
 
     while (abs(z) < 2.0f && ++n < constants->MAX_N) {
         z = z*z + complex<float>(
-            c * constants->COL_ITER - 1.5f,
-            r * constants->ROW_ITER - 1.0f
+            c * 2.0f / constants->MAX_COL - 1.5f,
+            r * 2.0f / constants->MAX_ROW - 1.0f
         );
     }
 
