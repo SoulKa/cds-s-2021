@@ -1,13 +1,12 @@
-CFLAGS=-O0 -Wall
-CC=gcc
+CXXFLAGS=-O0 -Wall
 RM=rm -f
 EXEC=himeno
 
 all: $(EXEC)
 
 $(EXEC):
-	$(CC) $(CFLAGS) $(EXEC).c -c -o $(EXEC).o
-	$(CC) $(CFLAGS) $(EXEC).o -o $(EXEC)
+	$(CXX) $(CXXFLAGS) $(EXEC).cpp -c -o $(EXEC).o
+	$(CXX) $(CXXFLAGS) $(EXEC).o -o $(EXEC)
 
 run:
 	./$(EXEC)
