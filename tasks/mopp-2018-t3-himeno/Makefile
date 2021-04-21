@@ -5,11 +5,10 @@ EXEC=himeno
 all: $(EXEC)
 
 $(EXEC):
-	$(CXX) $(CXXFLAGS) $(EXEC).cpp -c -o $(EXEC).o
-	$(CXX) $(CXXFLAGS) $(EXEC).o -o $(EXEC)
+	$(CXX) $(CXXFLAGS) $(EXEC).cpp matrix.cpp -o $(EXEC)
 
 run:
 	./$(EXEC)
 
 clean:
-	$(RM) $(EXEC).o $(EXEC)
+	$(RM) $(EXEC)
