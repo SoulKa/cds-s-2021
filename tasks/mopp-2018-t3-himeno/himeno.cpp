@@ -42,8 +42,6 @@
 
 using namespace std;
 
-#define MEASURE_TIME false
-
 // CONSTANTS
 const double OMEGA = 0.8;
 
@@ -66,7 +64,7 @@ uint NUM_CORES;
 
 int main() {
 
-    #if MEASURE_TIME
+    #ifdef MEASURE_TIME
         ts_beginning = get_timestamp();
     #endif
 
@@ -108,7 +106,7 @@ int main() {
     matrices.b.fill(0.0);
     matrices.c.fill(1.0);
 
-    #if MEASURE_TIME
+    #ifdef MEASURE_TIME
         time_preparation = get_timestamp(ts_beginning);
         ts_jacobi_beginning = get_timestamp();
     #endif
@@ -116,7 +114,7 @@ int main() {
     // print result
     printf("%.6f\n", jacobi(nn, &matrices));
 
-    #if MEASURE_TIME
+    #ifdef MEASURE_TIME
         time_jacobi = get_timestamp(ts_jacobi_beginning);
         time_full = get_timestamp(ts_beginning);
         fprintf(stderr, "Time full: %.3fms\n", time_full/1.0e6);
@@ -195,7 +193,7 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
     // start to calculate
     for (uint n=0; n<nn; n++) {
 
-        #if MEASURE_TIME
+        #ifdef MEASURE_TIME
             ts_temp = get_timestamp();
         #endif
 
@@ -203,7 +201,7 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(calculate_part, n == nn-1 ? gosa_arr+i : nullptr, matrices, d_ranges[i], d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
-        #if MEASURE_TIME
+        #ifdef MEASURE_TIME
             time_calculation += get_timestamp(ts_temp);
             ts_temp = get_timestamp();
         #endif
@@ -212,7 +210,7 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
-        #if MEASURE_TIME
+        #ifdef MEASURE_TIME
             time_copying += get_timestamp(ts_temp);
         #endif
         

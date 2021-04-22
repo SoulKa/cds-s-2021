@@ -13,5 +13,8 @@ run:
 profile:
 	$(CXX) $(CXXFLAGS) -pg $(EXEC).cpp -o $(EXEC)
 
+timing:
+	$(CXX) $(CXXFLAGS) -D MEASURE_TIME $(EXEC).cpp -o $(EXEC)
+
 clean:
 	$(RM) $(EXEC)
