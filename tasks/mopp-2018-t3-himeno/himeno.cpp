@@ -34,13 +34,15 @@
 #include <thread>
 #include <iostream>
 #include <atomic>
+#include <chrono>
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/time.h>
 #include <assert.h>
 
 using namespace std;
+
+#define MEASURE_TIME false
 
 // CONSTANTS
 const double OMEGA = 0.8;
@@ -48,9 +50,25 @@ const double OMEGA = 0.8;
 // GLOBAL VARS
 uint NUM_CORES;
 
+#if MEASURE_TIME
+    int64_t ts_beginning;
+    int64_t ts_jacobi_beginning;
+    int64_t ts_temp;
+
+    int64_t time_calculation = 0;
+    int64_t time_copying = 0;
+    int64_t time_preparation = 0;
+    int64_t time_jacobi = 0;
+    int64_t time_full = 0;
+#endif
+
 // FUNCTIONS
 
 int main() {
+
+    #if MEASURE_TIME
+        ts_beginning = get_timestamp();
+    #endif
 
     uint nn, mimax, mjmax, mkmax, msize[3];
 
@@ -90,8 +108,23 @@ int main() {
     matrices.b.fill(0.0);
     matrices.c.fill(1.0);
 
+    #if MEASURE_TIME
+        time_preparation = get_timestamp(ts_beginning);
+        ts_jacobi_beginning = get_timestamp();
+    #endif
+
     // print result
     printf("%.6f\n", jacobi(nn, &matrices));
+
+    #if MEASURE_TIME
+        time_jacobi = get_timestamp(ts_jacobi_beginning);
+        time_full = get_timestamp(ts_beginning);
+        fprintf(stderr, "Time full: %.3fms\n", time_full/1.0e6);
+        fprintf(stderr, "Time preparation: %.3fms (%.2f%%)\n", time_preparation/1.0e6, time_preparation*100.0/time_full);
+        fprintf(stderr, "Time jacobi: %.3fms (%.2f%%)\n", time_jacobi/1.0e6, time_jacobi*100.0/time_full);
+        fprintf(stderr, "  |--> Time calculated: %.3fms (%.2f%%)\n", time_calculation/1.0e6, time_calculation*100.0/time_jacobi);
+        fprintf(stderr, "  +--> Time copied: %.3fms (%.2f%%)\n", time_copying/1.0e6, time_copying*100.0/time_jacobi);
+    #endif
 
     return 0;
 
@@ -162,13 +195,26 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
     // start to calculate
     for (uint n=0; n<nn; n++) {
 
+        #if MEASURE_TIME
+            ts_temp = get_timestamp();
+        #endif
+
         // calculate in parallel
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(calculate_part, n == nn-1 ? gosa_arr+i : nullptr, matrices, d_ranges[i], d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
+        #if MEASURE_TIME
+            time_calculation += get_timestamp(ts_temp);
+            ts_temp = get_timestamp();
+        #endif
+
         // copy matrix in parallel
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
+
+        #if MEASURE_TIME
+            time_copying += get_timestamp(ts_temp);
+        #endif
         
     }
 
