@@ -9,5 +9,6 @@ profiling.txt
 *.png
 *.pdf
 test.*
+test
 judge.*
 *.o

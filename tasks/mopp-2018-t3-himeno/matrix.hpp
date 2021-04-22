@@ -1,3 +1,5 @@
+#define FILL_MUTLITHREADED false
+
 template<typename T>
 Matrix<T>::Matrix( uint nums, uint rows, uint cols, uint deps, uint num_threads ) :
     m_uiNums(nums),
@@ -26,29 +28,41 @@ Matrix<T>::~Matrix() {
 
 template<typename T>
 void Matrix<T>::fill( T value, uint n, uint r ) {
-    std::fill_n(&at(n, r, 0, 0), m_uiCols * m_uiDeps, value);
+    std::fill_n(&at(n, r, 0, 0), m_uiRowMemoryOffset, value);
 }
 
 template<typename T>
 void Matrix<T>::fill( T value, uint n ) {
-    for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i] = std::thread(std::fill_n<T* const, uint, T>, &at(n, m_pWorking_ranges[i], 0, 0), (m_pWorking_ranges[i+1]-m_pWorking_ranges[i]) * m_uiCols * m_uiDeps, value);
-    for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i].join();
+    #if FILL_MUTLITHREADED
+        for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i] = std::thread(std::fill_n<T* const, uint, T>, &at(n, m_pWorking_ranges[i], 0, 0), (m_pWorking_ranges[i+1]-m_pWorking_ranges[i]) * m_uiCols * m_uiDeps, value);
+        for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i].join();
+    #else
+        std::fill_n(&at(n, 0, 0, 0), m_uiNumMemoryOffset, value);
+    #endif
 }
 
 template<typename T>
 void Matrix<T>::fill( T value ) {
-    for (uint n = 0; n < m_uiNums; n++) {
-        for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i] = std::thread(std::fill_n<T* const, uint, T>, &at(n, m_pWorking_ranges[i], 0, 0), (m_pWorking_ranges[i+1]-m_pWorking_ranges[i]) * m_uiCols * m_uiDeps, value);
-        for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i].join();
-    }
+    #if FILL_MUTLITHREADED
+        for (uint n = 0; n < m_uiNums; n++) {
+            for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i] = std::thread(std::fill_n<T* const, uint, T>, &at(n, m_pWorking_ranges[i], 0, 0), (m_pWorking_ranges[i+1]-m_pWorking_ranges[i]) * m_uiCols * m_uiDeps, value);
+            for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i].join();
+        }
+    #else
+        std::fill_n(m_pData, m_uiNumMemoryOffset*m_uiNums, value);
+    #endif
 }
 
 template<typename T>
 void Matrix<T>::fill_partial( T value, uint n_begin, uint n_end ) {
-    for (uint n = n_begin; n < n_end; n++) {
-        for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i] = std::thread(std::fill_n<T* const, uint, T>, &at(n, m_pWorking_ranges[i], 0, 0), (m_pWorking_ranges[i+1]-m_pWorking_ranges[i]) * m_uiCols * m_uiDeps, value);
-        for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i].join();
-    }
+    #if FILL_MUTLITHREADED
+        for (uint n = n_begin; n < n_end; n++) {
+            for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i] = std::thread(std::fill_n<T* const, uint, T>, &at(n, m_pWorking_ranges[i], 0, 0), (m_pWorking_ranges[i+1]-m_pWorking_ranges[i]) * m_uiCols * m_uiDeps, value);
+            for (uint i = 0; i < m_uiNumThreads; i++) m_pThreads[i].join();
+        }
+    #else
+        std::fill_n(&at(n_begin, 0, 0, 0), m_uiNumMemoryOffset*(n_end-n_begin), value);
+    #endif
 }
 
 template<typename T>
@@ -81,12 +95,12 @@ T & Matrix<T>::at( uint n, uint r, uint c, uint d ) {
 
 template<typename T>
 void Matrix<T>::copy( Matrix<T> *src, Matrix<T> *dst ) {
-    std::memcpy(dst->m_pData, src->m_pData, (src->m_uiNums * src->m_uiRows * src->m_uiCols * src->m_uiDeps) * sizeof(T));
+    std::memcpy(dst->m_pData, src->m_pData, (src->m_uiNums * src->m_uiNumMemoryOffset) * sizeof(T));
 }
 
 template<typename T>
 void Matrix<T>::copy( Matrix<T> *src, Matrix<T> *dst, uint n ) {
-    std::memcpy(&dst->at(n, 0, 0, 0), &src->at(n, 0, 0, 0), (src->m_uiRows * src->m_uiCols * src->m_uiDeps) * sizeof(T));
+    std::memcpy(&dst->at(n, 0, 0, 0), &src->at(n, 0, 0, 0), src->m_uiNumMemoryOffset * sizeof(T));
 }
 
 template<typename T>

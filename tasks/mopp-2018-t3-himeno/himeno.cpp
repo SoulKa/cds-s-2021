@@ -47,44 +47,8 @@ const double OMEGA = 0.8;
 
 // GLOBAL VARS
 uint NUM_CORES;
-uint *d_ranges; // the range of depths each thread works on
-thread *thread_arr; // the worker threads
-
-bool done = false;
-mutex pos_mutex;
-vec3_uint_t cur_pos(1, 1, 1);
-
-mutex gosa_mutex;
 
 // FUNCTIONS
-
-bool get_next( vec3_uint_t &new_pos, mat_float64_t *m ) {
-
-    pos_mutex.lock();
-    if (done) {
-        pos_mutex.unlock();
-        return false;
-    }
-
-    new_pos.x = cur_pos.x;
-    new_pos.y = cur_pos.y;
-    new_pos.z = cur_pos.z;
-
-    if (++cur_pos.z == m->m_uiDeps-1) {
-        cur_pos.z = 1;
-        if (++cur_pos.y == m->m_uiCols-1) {
-            cur_pos.y = 1;
-            if (++cur_pos.x == m->m_uiRows-1) {
-                cur_pos.x = 1;
-                done = true;
-            }
-        }
-    }
-
-    pos_mutex.unlock();
-    return true;
-
-}
 
 int main() {
 
@@ -115,16 +79,6 @@ int main() {
         mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES)    // wrk2
     };
 
-    
-
-    // create thread array
-    thread_arr = new thread[NUM_CORES];
-
-    // the working ranges for the threads
-    d_ranges = new uint[NUM_CORES+1];
-    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices.p.m_uiDeps-2)/NUM_CORES);
-    d_ranges[NUM_CORES] = matrices.p.m_uiDeps-1;
-
     // initialize matrices
     matrices.p.set_init();
     matrices.bnd.fill(1.0, 0);
@@ -133,15 +87,12 @@ int main() {
 
     matrices.a.fill_partial(1.0, 0, 3);
     matrices.a.fill(1.0/6.0, 3);
-
     matrices.b.fill(0.0);
-
     matrices.c.fill(1.0);
 
     // print result
     printf("%.6f\n", jacobi(nn, &matrices));
 
-    delete[] d_ranges;
     return 0;
 
 }
@@ -183,24 +134,26 @@ void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k 
 
 void calculate_part( double *gosa, matrix_set_t *matrices, uint d_begin, uint d_end ) {
 
-    //fprintf(stderr, "Workin from %u up to %u\n", d_begin, d_end);
-
     for (uint r = 1; r < matrices->p.m_uiRows-1; r++) {
         for (uint c = 1; c < matrices->p.m_uiCols-1; c++) {
             for (uint d = d_begin; d < d_end; d++) calculate_at(gosa, matrices, r, c, d);
         }
     }
-
+    
 }
 
 double jacobi( uint nn, matrix_set_t *matrices ) {
 
-    
-
     // for the final (combined) result
     double gosa = 0.0f;
 
-    
+    // create thread array
+    auto thread_arr = new thread[NUM_CORES];
+
+    // the working ranges for the threads
+    auto d_ranges = new uint[NUM_CORES+1];
+    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices->p.m_uiDeps-2)/NUM_CORES);
+    d_ranges[NUM_CORES] = matrices->p.m_uiDeps-1;
 
     // the partial results
     auto gosa_arr = new double[NUM_CORES];
@@ -210,25 +163,24 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
     for (uint n=0; n<nn; n++) {
 
         // calculate in parallel
-        done = false;
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(calculate_part, n == nn-1 ? gosa_arr+i : nullptr, matrices, d_ranges[i], d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
         // copy matrix in parallel
-        //mat_float64_t::copy(&matrices->wrk2, &matrices->p, 0);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
-
-        //fprintf(stderr, "Iteration %u done...\n\n", n);
         
     }
 
     // sum up partial gosa
     for (uint i=0; i<NUM_CORES; i++) gosa += gosa_arr[i];
 
+    // free ressources
     delete[] thread_arr;
     delete[] gosa_arr;
+    delete[] d_ranges;
 
+    // done
     return gosa;
 }
 
