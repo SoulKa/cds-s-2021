@@ -18,6 +18,7 @@
 - copying the contents form the matrix `wrk2` to `p` after every iteration in parallel
 - calculating parts of the `wrk2` matrix for each iteration in parallel without locks
 - reduced the preparation time of the matrices by using `std::fill_n()` to fill the matrices with initial values
+- instead of copying the matrices at the end of each iteration only their pointers need to be swapped
 - made all fill functions of the matrices multithreaded
 - removed the use of the `wrk1` matrix as it only contains `0.0` and is never written
 - substituted the many occurances of `m->at(n,r,c,d)` by precalculated memory offsets
