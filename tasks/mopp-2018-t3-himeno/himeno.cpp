@@ -86,25 +86,25 @@ int main() {
 
     // create matrices
     matrix_set_t matrices = {
-        mat_float64_t(4, mimax, mjmax, mkmax, NUM_CORES),   // a
-        mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // b
-        mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // c
-        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // p
-        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // bnd
-        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // wrk1
-        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES)    // wrk2
+        new mat_float64_t(4, mimax, mjmax, mkmax, NUM_CORES),   // a
+        new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // b
+        new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // c
+        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // p
+        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // bnd
+        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // wrk1
+        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES)    // wrk2
     };
 
     // initialize matrices
-    matrices.p.set_init();
-    matrices.bnd.fill(1.0, 0);
-    matrices.wrk1.fill(0.0, 0);
-    mat_float64_t::copy(&matrices.p, &matrices.wrk2);
+    matrices.p->set_init();
+    matrices.bnd->fill(1.0, 0);
+    matrices.wrk1->fill(0.0, 0);
+    mat_float64_t::copy(matrices.p, matrices.wrk2);
 
-    matrices.a.fill_partial(1.0, 0, 3);
-    matrices.a.fill(1.0/6.0, 3);
-    matrices.b.fill(0.0);
-    matrices.c.fill(1.0);
+    matrices.a->fill_partial(1.0, 0, 3);
+    matrices.a->fill(1.0/6.0, 3);
+    matrices.b->fill(0.0);
+    matrices.c->fill(1.0);
 
     #ifdef MEASURE_TIME
         time_preparation = get_timestamp(ts_beginning);
@@ -130,34 +130,34 @@ int main() {
 
 void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k ) {
 
-    double s0 = matrices->a.at(0,i,j,k) * matrices->p.at(0,i+1,j,k)
-        + matrices->a.at(1,i,j,k) * matrices->p.at(0,i,j+1,k)
-        + matrices->a.at(2,i,j,k) * matrices->p.at(0,i,j,k+1)
-        + matrices->b.at(0,i,j,k) * (
-            matrices->p.at(0,i+1,j+1,k)
-            - matrices->p.at(0,i+1,j-1,k)
-            - matrices->p.at(0,i-1,j+1,k)
-            + matrices->p.at(0,i-1,j-1,k)
+    double s0 = matrices->a->at(0,i,j,k) * matrices->p->at(0,i+1,j,k)
+        + matrices->a->at(1,i,j,k) * matrices->p->at(0,i,j+1,k)
+        + matrices->a->at(2,i,j,k) * matrices->p->at(0,i,j,k+1)
+        + matrices->b->at(0,i,j,k) * (
+            matrices->p->at(0,i+1,j+1,k)
+            - matrices->p->at(0,i+1,j-1,k)
+            - matrices->p->at(0,i-1,j+1,k)
+            + matrices->p->at(0,i-1,j-1,k)
         )
-        + matrices->b.at(1,i,j,k) * (
-            matrices->p.at(0,i,j+1,k+1)
-            - matrices->p.at(0,i,j-1,k+1)
-            - matrices->p.at(0,i,j+1,k-1)
-            + matrices->p.at(0,i,j-1,k-1)
+        + matrices->b->at(1,i,j,k) * (
+            matrices->p->at(0,i,j+1,k+1)
+            - matrices->p->at(0,i,j-1,k+1)
+            - matrices->p->at(0,i,j+1,k-1)
+            + matrices->p->at(0,i,j-1,k-1)
         )
-        + matrices->b.at(2,i,j,k) * (
-            matrices->p.at(0,i+1,j,k+1)
-            - matrices->p.at(0,i-1,j,k+1)
-            - matrices->p.at(0,i+1,j,k-1)
-            + matrices->p.at(0,i-1,j,k-1)
+        + matrices->b->at(2,i,j,k) * (
+            matrices->p->at(0,i+1,j,k+1)
+            - matrices->p->at(0,i-1,j,k+1)
+            - matrices->p->at(0,i+1,j,k-1)
+            + matrices->p->at(0,i-1,j,k-1)
         )
-        + matrices->c.at(0,i,j,k) * matrices->p.at(0,i-1,j,k)
-        + matrices->c.at(1,i,j,k) * matrices->p.at(0,i,j-1,k)
-        + matrices->c.at(2,i,j,k) * matrices->p.at(0,i,j,k-1)
-        + matrices->wrk1.at(0,i,j,k);
+        + matrices->c->at(0,i,j,k) * matrices->p->at(0,i-1,j,k)
+        + matrices->c->at(1,i,j,k) * matrices->p->at(0,i,j-1,k)
+        + matrices->c->at(2,i,j,k) * matrices->p->at(0,i,j,k-1)
+        + matrices->wrk1->at(0,i,j,k);
 
-    double ss = (s0*matrices->a.at(3,i,j,k) - matrices->p.at(0,i,j,k)) * matrices->bnd.at(0,i,j,k);
-    matrices->wrk2.at(0,i,j,k) = matrices->p.at(0,i,j,k) + OMEGA*ss;
+    double ss = (s0*matrices->a->at(3,i,j,k) - matrices->p->at(0,i,j,k)) * matrices->bnd->at(0,i,j,k);
+    matrices->wrk2->at(0,i,j,k) = matrices->p->at(0,i,j,k) + OMEGA*ss;
 
     if (gosa != nullptr) (*gosa) += ss*ss;
 
@@ -165,8 +165,8 @@ void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k 
 
 void calculate_part( double *gosa, matrix_set_t *matrices, uint d_begin, uint d_end ) {
 
-    for (uint r = 1; r < matrices->p.m_uiRows-1; r++) {
-        for (uint c = 1; c < matrices->p.m_uiCols-1; c++) {
+    for (uint r = 1; r < matrices->p->m_uiRows-1; r++) {
+        for (uint c = 1; c < matrices->p->m_uiCols-1; c++) {
             for (uint d = d_begin; d < d_end; d++) calculate_at(gosa, matrices, r, c, d);
         }
     }
@@ -177,14 +177,15 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
 
     // for the final (combined) result
     double gosa = 0.0f;
+    mat_float64_t *p_mat_tmp;
 
     // create thread array
     auto thread_arr = new thread[NUM_CORES];
 
     // the working ranges for the threads
     auto d_ranges = new uint[NUM_CORES+1];
-    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices->p.m_uiDeps-2)/NUM_CORES);
-    d_ranges[NUM_CORES] = matrices->p.m_uiDeps-1;
+    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices->p->m_uiDeps-2)/NUM_CORES);
+    d_ranges[NUM_CORES] = matrices->p->m_uiDeps-1;
 
     // the partial results
     auto gosa_arr = new double[NUM_CORES];
@@ -207,8 +208,13 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         #endif
 
         // copy matrix in parallel
-        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
-        for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
+        /*for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, matrices->wrk2, matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p->m_uiRows-1, matrices->p->m_uiCols-1, d_ranges[i+1]);
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();*/
+
+        // swap matrices (no copy needed)
+        p_mat_tmp = matrices->p;
+        matrices->p = matrices->wrk2;
+        matrices->wrk2 = p_mat_tmp;
 
         #ifdef MEASURE_TIME
             time_copying += get_timestamp(ts_temp);
