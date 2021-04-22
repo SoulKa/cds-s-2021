@@ -25,7 +25,7 @@ class Matrix {
 
         void set_init();
 
-        float & at( unsigned int n, unsigned int r, unsigned int c, unsigned int d );
+        float & at( unsigned int num, unsigned int row, unsigned int col, unsigned int depth );
 
 };
 
