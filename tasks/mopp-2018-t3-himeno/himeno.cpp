@@ -54,7 +54,7 @@ mutex gosa_mutex;
 
 // FUNCTIONS
 
-bool get_next( vec3_uint_t &new_pos, Matrix *m ) {
+bool get_next( vec3_uint_t &new_pos, mat_float64_t *m ) {
 
     pos_mutex.lock();
     if (done) {
@@ -97,13 +97,13 @@ int main() {
 
     // initialize matrices
     matrix_set_t matrices = {
-        Matrix(4,mimax,mjmax,mkmax),
-        Matrix(3,mimax,mjmax,mkmax),
-        Matrix(3,mimax,mjmax,mkmax),
-        Matrix(1,mimax,mjmax,mkmax),
-        Matrix(1,mimax,mjmax,mkmax),
-        Matrix(1,mimax,mjmax,mkmax),
-        Matrix(1,mimax,mjmax,mkmax)
+        mat_float64_t(4,mimax,mjmax,mkmax),
+        mat_float64_t(3,mimax,mjmax,mkmax),
+        mat_float64_t(3,mimax,mjmax,mkmax),
+        mat_float64_t(1,mimax,mjmax,mkmax),
+        mat_float64_t(1,mimax,mjmax,mkmax),
+        mat_float64_t(1,mimax,mjmax,mkmax),
+        mat_float64_t(1,mimax,mjmax,mkmax)
     };
 
     matrices.p.set_init();
@@ -169,9 +169,9 @@ void calculate_part( double *gosa, matrix_set_t *matrices, uint d_begin, uint d_
 
     //fprintf(stderr, "Workin from %u up to %u\n", d_begin, d_end);
 
-    for (uint r = 1; r < matrices->p.m_uiRows-1; r++) {
+    for (uint d = d_begin; d < d_end; d++) {
         for (uint c = 1; c < matrices->p.m_uiCols-1; c++) {
-            for (uint d = d_begin; d < d_end; d++) calculate_at(gosa, matrices, r, c, d);
+            for (uint r = 1; r < matrices->p.m_uiRows-1; r++) calculate_at(gosa, matrices, r, c, d);
         }
     }
 
@@ -208,7 +208,7 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
         // copy matrix in parallel
-        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(Matrix::copy, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
         //fprintf(stderr, "Iteration %u done...\n\n", n);

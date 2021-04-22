@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+template<typename T>
 class Matrix {
 
     public:
@@ -11,7 +12,7 @@ class Matrix {
         const uint m_uiRows = 0;
         const uint m_uiCols = 0;
         const uint m_uiDeps = 0;
-        float* const m_pData = nullptr;
+        T* const m_pData = nullptr;
 
         Matrix() {}
         Matrix( uint nums, uint rows, uint cols, uint deps );
@@ -23,7 +24,7 @@ class Matrix {
          * @param n The num/level to access
          * @param val The value to fill the matrix with
          */
-        void set(int n, float val);
+        void set(int n, T val);
 
         void set_init();
 
@@ -35,7 +36,7 @@ class Matrix {
          * @param depth The depth to access it at
          * @return A reference to the float at the given position
          */
-        float & at( uint num, uint row, uint col, uint depth );
+        T & at( uint num, uint row, uint col, uint depth );
 
         /**
          * @brief Copies the contents of given src matrix into the dst matrix
@@ -50,8 +51,10 @@ class Matrix {
          * @param c_end The column to end copying (excluding)
          * @param d_end The depth to end copying (excluding)
          */
-        static void copy( Matrix *src, Matrix *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end );
+        static void copy( Matrix<T> *src, Matrix<T> *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end );
 
 };
+
+#include "matrix.hpp"
 
 #endif

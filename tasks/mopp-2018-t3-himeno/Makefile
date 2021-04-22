@@ -5,7 +5,7 @@ EXEC=himeno
 all: $(EXEC)
 
 $(EXEC):
-	$(CXX) $(CXXFLAGS) $(EXEC).cpp matrix.cpp -o $(EXEC)
+	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
 run:
 	./$(EXEC)

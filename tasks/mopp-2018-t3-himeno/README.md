@@ -9,7 +9,7 @@
 **Measurements:**
 | Version | Setting | Parallel code part |
 | --- | --- |  --- |
-| 1 | 12 cores on PC | 77,87% |
+| 1 | 12 cores on PC | 89,69% |
 
 ## Improvements made
 
