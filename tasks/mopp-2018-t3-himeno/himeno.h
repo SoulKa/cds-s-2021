@@ -16,8 +16,7 @@ typedef struct {
     mat_float64_t *c;
     mat_float64_t *p;
     mat_float64_t *bnd;
-    mat_float64_t *wrk1;
-    mat_float64_t *wrk2;
+    mat_float64_t *wrk;
 } matrix_set_t;
 
 double jacobi( uint nn, matrix_set_t *matrices );
