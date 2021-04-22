@@ -29,7 +29,6 @@
 ********************************************************************/
 
 #include "himeno.h"
-#include "vec3.h"
 
 #include <mutex>
 #include <thread>
@@ -43,14 +42,10 @@
 
 using namespace std;
 
-typedef Vec3<uint> vec3_uint_t;
-
 // CONSTANTS
-const float OMEGA = 0.8;
+const double OMEGA = 0.8;
 
 // GLOBAL VARS
-Matrix a,b,c,p,bnd,wrk1,wrk2;
-
 bool done = false;
 mutex pos_mutex;
 vec3_uint_t cur_pos(1, 1, 1);
@@ -101,108 +96,122 @@ int main() {
     mkmax = msize[2];
 
     // initialize matrices
-    p.initialize(1,mimax,mjmax,mkmax);
-    bnd.initialize(1,mimax,mjmax,mkmax);
-    wrk1.initialize(1,mimax,mjmax,mkmax);
-    wrk2.initialize(1,mimax,mjmax,mkmax);
-    a.initialize(4,mimax,mjmax,mkmax);
-    b.initialize(3,mimax,mjmax,mkmax);
-    c.initialize(3,mimax,mjmax,mkmax);
+    matrix_set_t matrices = {
+        Matrix(4,mimax,mjmax,mkmax),
+        Matrix(3,mimax,mjmax,mkmax),
+        Matrix(3,mimax,mjmax,mkmax),
+        Matrix(1,mimax,mjmax,mkmax),
+        Matrix(1,mimax,mjmax,mkmax),
+        Matrix(1,mimax,mjmax,mkmax),
+        Matrix(1,mimax,mjmax,mkmax)
+    };
 
-    p.set_init();
-    bnd.set(0,1.0);
-    wrk1.set(0,0.0);
-    wrk2.set(0,0.0);
+    matrices.p.set_init();
+    matrices.bnd.set(0,1.0);
+    matrices.wrk1.set(0,0.0);
+    matrices.wrk2.set(0,0.0);
 
-    a.set(0,1.0);
-    a.set(1,1.0);
-    a.set(2,1.0);
-    a.set(3,1.0/6.0);
+    matrices.a.set(0,1.0);
+    matrices.a.set(1,1.0);
+    matrices.a.set(2,1.0);
+    matrices.a.set(3,1.0/6.0);
 
-    b.set(0,0.0);
-    b.set(1,0.0);
-    b.set(2,0.0);
+    matrices.b.set(0,0.0);
+    matrices.b.set(1,0.0);
+    matrices.b.set(2,0.0);
 
-    c.set(0,1.0);
-    c.set(1,1.0);
-    c.set(2,1.0);
+    matrices.c.set(0,1.0);
+    matrices.c.set(1,1.0);
+    matrices.c.set(2,1.0);
 
     // print result
-    printf("%.6f\n", jacobi(nn, &a, &b, &c, &p, &bnd, &wrk1, &wrk2));
+    printf("%.6f\n", jacobi(nn, &matrices));
     return 0;
 
 }
 
-void work( double *gosa, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd, Matrix* wrk1, Matrix* wrk2 ) {
+void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k ) {
 
-    float s0, ss;
-    vec3_uint_t pos;
+    double s0 = matrices->a.at(0,i,j,k) * matrices->p.at(0,i+1,j,k)
+        + matrices->a.at(1,i,j,k) * matrices->p.at(0,i,j+1,k)
+        + matrices->a.at(2,i,j,k) * matrices->p.at(0,i,j,k+1)
+        + matrices->b.at(0,i,j,k) * (
+            matrices->p.at(0,i+1,j+1,k)
+            - matrices->p.at(0,i+1,j-1,k)
+            - matrices->p.at(0,i-1,j+1,k)
+            + matrices->p.at(0,i-1,j-1,k)
+        )
+        + matrices->b.at(1,i,j,k) * (
+            matrices->p.at(0,i,j+1,k+1)
+            - matrices->p.at(0,i,j-1,k+1)
+            - matrices->p.at(0,i,j+1,k-1)
+            + matrices->p.at(0,i,j-1,k-1)
+        )
+        + matrices->b.at(2,i,j,k) * (
+            matrices->p.at(0,i+1,j,k+1)
+            - matrices->p.at(0,i-1,j,k+1)
+            - matrices->p.at(0,i+1,j,k-1)
+            + matrices->p.at(0,i-1,j,k-1)
+        )
+        + matrices->c.at(0,i,j,k) * matrices->p.at(0,i-1,j,k)
+        + matrices->c.at(1,i,j,k) * matrices->p.at(0,i,j-1,k)
+        + matrices->c.at(2,i,j,k) * matrices->p.at(0,i,j,k-1)
+        + matrices->wrk1.at(0,i,j,k);
 
-    while (get_next(pos, p)) {
-        
-        uint i = pos.x;
-        uint j = pos.y;
-        uint k = pos.z;
+    double ss = (s0*matrices->a.at(3,i,j,k) - matrices->p.at(0,i,j,k)) * matrices->bnd.at(0,i,j,k);
+    matrices->wrk2.at(0,i,j,k) = matrices->p.at(0,i,j,k) + OMEGA*ss;
 
-        s0 = a->at(0,i,j,k) * p->at(0,i+1,j,k)
-            + a->at(1,i,j,k) * p->at(0,i,j+1,k)
-            + a->at(2,i,j,k) * p->at(0,i,j,k+1)
-            + b->at(0,i,j,k) * (
-                p->at(0,i+1,j+1,k)
-                - p->at(0,i+1,j-1,k)
-                - p->at(0,i-1,j+1,k)
-                + p->at(0,i-1,j-1,k)
-            )
-            + b->at(1,i,j,k) * (
-                p->at(0,i,j+1,k+1)
-                - p->at(0,i,j-1,k+1)
-                - p->at(0,i,j+1,k-1)
-                + p->at(0,i,j-1,k-1)
-            )
-            + b->at(2,i,j,k) * (
-                p->at(0,i+1,j,k+1)
-                - p->at(0,i-1,j,k+1)
-                - p->at(0,i+1,j,k-1)
-                + p->at(0,i-1,j,k-1)
-            )
-            + c->at(0,i,j,k) * p->at(0,i-1,j,k)
-            + c->at(1,i,j,k) * p->at(0,i,j-1,k)
-            + c->at(2,i,j,k) * p->at(0,i,j,k-1)
-            + wrk1->at(0,i,j,k);
+    if (gosa != nullptr) (*gosa) += ss*ss;
 
-        ss = (s0*a->at(3,i,j,k) - p->at(0,i,j,k)) * bnd->at(0,i,j,k);
-        wrk2->at(0,i,j,k) = p->at(0,i,j,k) + OMEGA*ss;
+}
 
-        if (gosa != nullptr) (*gosa) += ss*ss;
+void calculate_part( double *gosa, matrix_set_t *matrices, uint d_begin, uint d_end ) {
+
+    //fprintf(stderr, "Workin from %u up to %u\n", d_begin, d_end);
+
+    for (uint r = 1; r < matrices->p.m_uiRows-1; r++) {
+        for (uint c = 1; c < matrices->p.m_uiCols-1; c++) {
+            for (uint d = d_begin; d < d_end; d++) calculate_at(gosa, matrices, r, c, d);
+        }
     }
 
 }
 
-double jacobi( uint nn, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd, Matrix* wrk1, Matrix* wrk2 ) {
+double jacobi( uint nn, matrix_set_t *matrices ) {
 
     // get amount of cores
     auto NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
     assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
     cerr << "Working with " << NUM_CORES << " cores" << endl;
 
+    // for the final (combined) result
     double gosa = 0.0f;
+
+    // the worker threads
     auto thread_arr = new thread[NUM_CORES];
+
+    // the partial results
     auto gosa_arr = new double[NUM_CORES];
     fill_n(gosa_arr, NUM_CORES, 0.0f);
 
+    // the working ranges for the threads
+    auto d_ranges = new uint[NUM_CORES+1];
+    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices->p.m_uiDeps-2)/NUM_CORES);
+    d_ranges[NUM_CORES] = matrices->p.m_uiDeps-1;
+
+    // start to calculate
     for (uint n=0; n<nn; n++) {
 
-
-        // work in parallel
+        // calculate in parallel
         done = false;
-        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(work, n == nn-1 ? gosa_arr+i : nullptr, a, b, c, p, bnd, wrk1, wrk2);
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(calculate_part, n == nn-1 ? gosa_arr+i : nullptr, matrices, d_ranges[i], d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
-        for (uint i=1; i<p->m_uiRows-1; i++) {
-            for (uint j=1; j<p->m_uiCols-1; j++) {
-                for (uint k=1; k<p->m_uiDeps-1; k++) p->at(0,i,j,k) = wrk2->at(0,i,j,k);
-            }
-        }
+        // copy matrix in parallel
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(Matrix::copy, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
+
+        //fprintf(stderr, "Iteration %u done...\n\n", n);
         
     }
 

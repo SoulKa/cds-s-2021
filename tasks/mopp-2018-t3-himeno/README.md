@@ -2,13 +2,15 @@
 
 ## Performance
 
-> **Minimum Desired Speedup:** 9x
+> **Minimum Desired Speedup:** 9x or 90,51% parallel code
 
-> **Optimal Desired Speedup:** 13x
+> **Optimal Desired Speedup:** 13x or 93,99% parallel code
 
 **Measurements:**
-| Setting | Duration |
-| --- |  --- |
+| Version | Setting | Parallel code part |
+| --- | --- |  --- |
+| 1 | 12 cores on PC | 77,87% |
+
 ## Improvements made
 
 - converted everything from C to C++

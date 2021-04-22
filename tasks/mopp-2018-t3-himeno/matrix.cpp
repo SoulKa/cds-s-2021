@@ -1,5 +1,7 @@
 #include "matrix.h"
 
+#include <stdio.h>
+
 Matrix::Matrix( uint nums, uint rows, uint cols, uint deps )
     : m_uiNums(nums), m_uiRows(rows), m_uiCols(cols), m_uiDeps(deps), m_pData(new float[nums * rows * cols * deps * sizeof(float)]) {}
 
@@ -29,10 +31,12 @@ float & Matrix::at( uint n, uint r, uint c, uint d ) {
 
 void Matrix::copy( Matrix *src, Matrix *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end ) {
 
-    for (; n_begin < n_end; n_begin++) {
-        for (; r_begin < r_end; r_begin++) {
-            for (; c_begin < c_end; c_begin++) {
-                for (; c_begin < c_end; c_begin++) dst->at(n_begin, r_begin, c_begin, d_begin) = src->at(n_begin, r_begin, c_begin, d_begin);
+    //fprintf(stderr, "Copying from [%u, %u, %u, %u] up to [%u, %u, %u, %u]\n", n_begin, r_begin, c_begin, d_begin, n_end, r_end, c_end, d_end);
+
+    for (uint n = n_begin; n < n_end; n++) {
+        for (uint r = r_begin; r < r_end; r++) {
+            for (uint c = c_begin; c < c_end; c++) {
+                for (uint d = d_begin; d < d_end; d++) dst->at(n, r, c, d) = src->at(n, r, c, d);
             }
         }
     }
