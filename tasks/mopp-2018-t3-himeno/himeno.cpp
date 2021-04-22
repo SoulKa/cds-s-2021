@@ -46,6 +46,10 @@ using namespace std;
 const double OMEGA = 0.8;
 
 // GLOBAL VARS
+uint NUM_CORES;
+uint *d_ranges; // the range of depths each thread works on
+thread *thread_arr; // the worker threads
+
 bool done = false;
 mutex pos_mutex;
 vec3_uint_t cur_pos(1, 1, 1);
@@ -86,26 +90,42 @@ int main() {
 
     uint nn, mimax, mjmax, mkmax, msize[3];
 
-    scanf("%u", &msize[0]);
-    scanf("%u", &msize[1]);
-    scanf("%u", &msize[2]);
-    scanf("%u", &nn);
+    // get amount of cores
+    NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
+    assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
+    cerr << "Working with " << NUM_CORES << " cores" << endl;
+
+    cin >> msize[0];
+    cin >> msize[1];
+    cin >> msize[2];
+    cin >> nn;
     
     mimax = msize[0];
     mjmax = msize[1];
     mkmax = msize[2];
 
-    // initialize matrices
+    // create matrices
     matrix_set_t matrices = {
-        mat_float64_t(4,mimax,mjmax,mkmax),
-        mat_float64_t(3,mimax,mjmax,mkmax),
-        mat_float64_t(3,mimax,mjmax,mkmax),
-        mat_float64_t(1,mimax,mjmax,mkmax),
-        mat_float64_t(1,mimax,mjmax,mkmax),
-        mat_float64_t(1,mimax,mjmax,mkmax),
-        mat_float64_t(1,mimax,mjmax,mkmax)
+        mat_float64_t(4, mimax, mjmax, mkmax, NUM_CORES),   // a
+        mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // b
+        mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // c
+        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // p
+        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // bnd
+        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // wrk1
+        mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES)    // wrk2
     };
 
+    
+
+    // create thread array
+    thread_arr = new thread[NUM_CORES];
+
+    // the working ranges for the threads
+    d_ranges = new uint[NUM_CORES+1];
+    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices.p.m_uiDeps-2)/NUM_CORES);
+    d_ranges[NUM_CORES] = matrices.p.m_uiDeps-1;
+
+    // initialize matrices
     matrices.p.set_init();
     matrices.bnd.fill(1.0, 0);
     matrices.wrk1.fill(0.0, 0);
@@ -120,6 +140,8 @@ int main() {
 
     // print result
     printf("%.6f\n", jacobi(nn, &matrices));
+
+    delete[] d_ranges;
     return 0;
 
 }
@@ -173,25 +195,16 @@ void calculate_part( double *gosa, matrix_set_t *matrices, uint d_begin, uint d_
 
 double jacobi( uint nn, matrix_set_t *matrices ) {
 
-    // get amount of cores
-    auto NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
-    assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
-    cerr << "Working with " << NUM_CORES << " cores" << endl;
+    
 
     // for the final (combined) result
     double gosa = 0.0f;
 
-    // the worker threads
-    auto thread_arr = new thread[NUM_CORES];
+    
 
     // the partial results
     auto gosa_arr = new double[NUM_CORES];
     fill_n(gosa_arr, NUM_CORES, 0.0f);
-
-    // the working ranges for the threads
-    auto d_ranges = new uint[NUM_CORES+1];
-    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices->p.m_uiDeps-2)/NUM_CORES);
-    d_ranges[NUM_CORES] = matrices->p.m_uiDeps-1;
 
     // start to calculate
     for (uint n=0; n<nn; n++) {

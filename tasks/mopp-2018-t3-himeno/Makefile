@@ -1,4 +1,4 @@
-CXXFLAGS=-O0 -Wall -pthread
+CXXFLAGS=-O3 -Wall -pthread
 RM=rm -f
 EXEC=himeno
 

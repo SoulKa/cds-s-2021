@@ -5,6 +5,7 @@
 
 #include <cstring>
 #include <algorithm>
+#include <thread>
 
 #include <stdio.h>
 #include <assert.h>
@@ -19,17 +20,21 @@ class Matrix {
         const uint m_uiCols = 0;
         const uint m_uiDeps = 0;
         T* const m_pData = nullptr;
+        const uint m_uiNumThreads = 0;
+
 
         Matrix() {}
-        Matrix( uint nums, uint rows, uint cols, uint deps );
+        Matrix( uint nums, uint rows, uint cols, uint deps, uint num_threads );
         ~Matrix();
 
         /**
          * @brief Fills the whole matrix at num n with the given
          * value
          * @param n The num/level to access
+         * @param r The row to access
          * @param value The value to fill the matrix with
          */
+        void fill(T value, uint n, uint r );
         void fill(T value, uint n );
         void fill(T value);
 
@@ -63,6 +68,15 @@ class Matrix {
         static void copy_partial( Matrix<T> *src, Matrix<T> *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end );
         static void copy( Matrix<T> *src, Matrix<T> *dst, uint n );
         static void copy( Matrix<T> *src, Matrix<T> *dst );
+
+    private:
+        std::thread* const m_pThreads = nullptr;
+        uint* const m_pWorking_ranges = nullptr;
+
+        const uint m_uiNumMemoryOffset = 0;
+        const uint m_uiRowMemoryOffset = 0;
+
+        static void set_init_partial( Matrix<T> *m, uint r_begin, uint r_end );
 
 };
 
