@@ -42,8 +42,9 @@
 
 using namespace std;
 
-// CONSTANTS
-const double OMEGA = 0.8;
+// DEFINES
+#define OMEGA 0.8
+#define ONE_SIXTH 1.0/6.0
 
 // GLOBAL VARS
 uint NUM_CORES;
@@ -86,23 +87,23 @@ int main() {
 
     // create matrices
     matrix_set_t matrices = {
-        new mat_float64_t(4, mimax, mjmax, mkmax, NUM_CORES),   // a
+        /*new mat_float64_t(4, mimax, mjmax, mkmax, NUM_CORES),   // a
         new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // b
-        new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // c
+        new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // c*/
         new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // p
-        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // bnd
-        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // wrk
+        //new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // bnd
+        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES)   // wrk
     };
 
     // initialize matrices
     matrices.p->set_init();
-    matrices.bnd->fill(1.0);
+    //matrices.bnd->fill(1.0);
     mat_float64_t::copy(matrices.p, matrices.wrk);
 
-    matrices.a->fill_partial(1.0, 0, 3);
+    /*matrices.a->fill_partial(1.0, 0, 3);
     matrices.a->fill(1.0/6.0, 3);
     matrices.b->fill(0.0);
-    matrices.c->fill(1.0);
+    matrices.c->fill(1.0);*/
 
     #ifdef MEASURE_TIME
         time_preparation = get_timestamp(ts_beginning);
@@ -129,14 +130,14 @@ int main() {
 void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k ) {
     
     uint p_offset = i * matrices->p->m_uiCols*matrices->p->m_uiDeps + j * matrices->p->m_uiDeps + k;
-    uint p_num_offset = matrices->p->m_uiRows*matrices->p->m_uiCols*matrices->p->m_uiDeps;
+    /*uint p_num_offset = matrices->p->m_uiRows*matrices->p->m_uiCols*matrices->p->m_uiDeps;
     uint p_n1_offset = p_num_offset + p_offset;
-    uint p_n2_offset = 2*p_num_offset + p_offset;
+    uint p_n2_offset = 2*p_num_offset + p_offset;*/
 
-    double s0 = matrices->a->m_pData[p_offset] * matrices->p->at(0,i+1,j,k)
-        + matrices->a->m_pData[p_n1_offset] * matrices->p->at(0,i,j+1,k)
-        + matrices->a->m_pData[p_n2_offset] * matrices->p->at(0,i,j,k+1)
-        + matrices->b->m_pData[p_offset] * (
+    double s0 = /*matrices->a->m_pData[p_offset] **/ matrices->p->at(0,i+1,j,k)
+        + /*matrices->a->m_pData[p_n1_offset] **/ matrices->p->at(0,i,j+1,k)
+        + /*matrices->a->m_pData[p_n2_offset] **/ matrices->p->at(0,i,j,k+1)
+        /*+ matrices->b->m_pData[p_offset] * (
             matrices->p->at(0,i+1,j+1,k)
             - matrices->p->at(0,i+1,j-1,k)
             - matrices->p->at(0,i-1,j+1,k)
@@ -153,12 +154,12 @@ void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k 
             - matrices->p->at(0,i-1,j,k+1)
             - matrices->p->at(0,i+1,j,k-1)
             + matrices->p->at(0,i-1,j,k-1)
-        )
-        + matrices->c->m_pData[p_offset] * matrices->p->at(0,i-1,j,k)
-        + matrices->c->m_pData[p_n1_offset] * matrices->p->at(0,i,j-1,k)
-        + matrices->c->m_pData[p_n2_offset] * matrices->p->at(0,i,j,k-1);
+        )*/
+        + /*matrices->c->m_pData[p_offset] **/ matrices->p->at(0,i-1,j,k)
+        + /*matrices->c->m_pData[p_n1_offset] **/ matrices->p->at(0,i,j-1,k)
+        + /*matrices->c->m_pData[p_n2_offset] **/ matrices->p->at(0,i,j,k-1);
 
-    double ss = (s0*matrices->a->m_pData[3*p_num_offset + p_offset] - matrices->p->m_pData[p_offset]) * matrices->bnd->m_pData[p_offset];
+    double ss = (s0*ONE_SIXTH - matrices->p->m_pData[p_offset])/* * matrices->bnd->m_pData[p_offset]*/;
     matrices->wrk->m_pData[p_offset] = matrices->p->m_pData[p_offset] + OMEGA*ss;
 
     if (gosa != nullptr) (*gosa) += ss*ss;

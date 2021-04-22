@@ -21,6 +21,8 @@
 - made all fill functions of the matrices multithreaded
 - removed the use of the `wrk1` matrix as it only contains `0.0` and is never written
 - substituted the many occurances of `m->at(n,r,c,d)` by precalculated memory offsets
+- remove all matrices except `wrk` and `p` since they were useless
+- only calculate `gosa` in the last iteration
 
 ## Problems
 
