@@ -81,7 +81,6 @@ T & Matrix<T>::at( uint n, uint r, uint c, uint d ) {
 
 template<typename T>
 void Matrix<T>::copy( Matrix<T> *src, Matrix<T> *dst ) {
-    assert((src->m_uiNums == dst->m_uiNums) && "The two matrices must have the same size when cloning!");
     std::memcpy(dst->m_pData, src->m_pData, (src->m_uiNums * src->m_uiRows * src->m_uiCols * src->m_uiDeps) * sizeof(T));
 }
 

@@ -8,7 +8,10 @@ $(EXEC):
 	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
 run:
-	./$(EXEC)
+	cat $(EXEC).in | ./$(EXEC) 
+
+profile:
+	$(CXX) $(CXXFLAGS) -pg $(EXEC).cpp -o $(EXEC)
 
 clean:
 	$(RM) $(EXEC)
