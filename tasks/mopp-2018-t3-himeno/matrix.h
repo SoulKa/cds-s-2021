@@ -1,23 +1,25 @@
 #ifndef __HEADER_MATRIX__
 #define __HEADER_MATRIX__
 
+#include "common.h"
+
 class Matrix {
 
     public:
 
         float* m_pData = nullptr;
 
-        unsigned int m_uiNums = 0;
+        uint m_uiNums = 0;
 
-        unsigned int m_uiRows = 0;
+        uint m_uiRows = 0;
 
-        unsigned int m_uiCols = 0;
+        uint m_uiCols = 0;
 
-        unsigned int m_uiDeps = 0;
+        uint m_uiDeps = 0;
 
         ~Matrix();
 
-        void initialize( unsigned int nums, unsigned int rows, unsigned int cols, unsigned int deps );
+        void initialize( uint nums, uint rows, uint cols, uint deps );
 
         void clear();
 
@@ -25,7 +27,7 @@ class Matrix {
 
         void set_init();
 
-        float & at( unsigned int num, unsigned int row, unsigned int col, unsigned int depth );
+        float & at( uint num, uint row, uint col, uint depth );
 
 };
 

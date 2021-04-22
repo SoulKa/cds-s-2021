@@ -43,6 +43,8 @@
 
 using namespace std;
 
+typedef Vec3<uint> vec3_uint_t;
+
 // CONSTANTS
 const float OMEGA = 0.8;
 
@@ -51,13 +53,13 @@ Matrix a,b,c,p,bnd,wrk1,wrk2;
 
 bool done = false;
 mutex pos_mutex;
-Vec3<unsigned int> cur_pos(1, 1, 1);
+vec3_uint_t cur_pos(1, 1, 1);
 
 mutex gosa_mutex;
 
 // FUNCTIONS
 
-bool get_next( Vec3<unsigned int> &new_pos, Matrix *m ) {
+bool get_next( vec3_uint_t &new_pos, Matrix *m ) {
 
     pos_mutex.lock();
     if (done) {
@@ -87,7 +89,7 @@ bool get_next( Vec3<unsigned int> &new_pos, Matrix *m ) {
 
 int main() {
 
-    unsigned int nn, mimax, mjmax, mkmax, msize[3];
+    uint nn, mimax, mjmax, mkmax, msize[3];
 
     scanf("%u", &msize[0]);
     scanf("%u", &msize[1]);
@@ -131,16 +133,16 @@ int main() {
 
 }
 
-void work( float *gosa, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd, Matrix* wrk1, Matrix* wrk2 ) {
+void work( double *gosa, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd, Matrix* wrk1, Matrix* wrk2 ) {
 
     float s0, ss;
-    Vec3<unsigned int> pos;
+    vec3_uint_t pos;
 
     while (get_next(pos, p)) {
         
-        unsigned int i = pos.x;
-        unsigned int j = pos.y;
-        unsigned int k = pos.z;
+        uint i = pos.x;
+        uint j = pos.y;
+        uint k = pos.z;
 
         s0 = a->at(0,i,j,k) * p->at(0,i+1,j,k)
             + a->at(1,i,j,k) * p->at(0,i,j+1,k)
@@ -171,41 +173,45 @@ void work( float *gosa, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd,
         ss = (s0*a->at(3,i,j,k) - p->at(0,i,j,k)) * bnd->at(0,i,j,k);
         wrk2->at(0,i,j,k) = p->at(0,i,j,k) + OMEGA*ss;
 
-        if (gosa != nullptr) {
-            gosa_mutex.lock();
-            (*gosa) += ss*ss;
-            gosa_mutex.unlock();
-        }
+        if (gosa != nullptr) (*gosa) += ss*ss;
     }
 
 }
 
-float jacobi( unsigned int nn, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd, Matrix* wrk1, Matrix* wrk2 ) {
+double jacobi( uint nn, Matrix* a, Matrix* b, Matrix* c, Matrix* p, Matrix* bnd, Matrix* wrk1, Matrix* wrk2 ) {
 
     // get amount of cores
     auto NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
     assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
     cerr << "Working with " << NUM_CORES << " cores" << endl;
 
-    float gosa = 0.0f;  
+    double gosa = 0.0f;
     auto thread_arr = new thread[NUM_CORES];
+    auto gosa_arr = new double[NUM_CORES];
+    fill_n(gosa_arr, NUM_CORES, 0.0f);
 
-    for (unsigned int n=0; n<nn; n++) {
+    for (uint n=0; n<nn; n++) {
+
 
         // work in parallel
         done = false;
-        for (unsigned int i=0; i<NUM_CORES; i++) thread_arr[i] = thread(work, n == nn-1 ? &gosa : nullptr, a, b, c, p, bnd, wrk1, wrk2);
-        for (unsigned int i=0; i<NUM_CORES; i++) thread_arr[i].join();
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(work, n == nn-1 ? gosa_arr+i : nullptr, a, b, c, p, bnd, wrk1, wrk2);
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
-        for (unsigned int i=1; i<p->m_uiRows-1; i++) {
-            for (unsigned int j=1; j<p->m_uiCols-1; j++) {
-                for (unsigned int k=1; k<p->m_uiDeps-1; k++) p->at(0,i,j,k) = wrk2->at(0,i,j,k);
+        for (uint i=1; i<p->m_uiRows-1; i++) {
+            for (uint j=1; j<p->m_uiCols-1; j++) {
+                for (uint k=1; k<p->m_uiDeps-1; k++) p->at(0,i,j,k) = wrk2->at(0,i,j,k);
             }
         }
         
     }
 
+    // sum up partial gosa
+    for (uint i=0; i<NUM_CORES; i++) gosa += gosa_arr[i];
+
     delete[] thread_arr;
+    delete[] gosa_arr;
+
     return gosa;
 }
 

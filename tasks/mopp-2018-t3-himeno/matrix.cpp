@@ -4,7 +4,7 @@ Matrix::~Matrix() {
     clear();
 }
 
-void Matrix::initialize( unsigned int nums, unsigned int rows, unsigned int cols, unsigned int deps ) {
+void Matrix::initialize( uint nums, uint rows, uint cols, uint deps ) {
     m_uiNums = nums;
     m_uiRows = rows;
     m_uiCols = cols;
@@ -25,21 +25,25 @@ void Matrix::clear() {
 }
 
 void Matrix::set( int l, float value ) {
-    for (unsigned int i=0; i<m_uiRows; i++) {
-        for (unsigned int j=0; j<m_uiCols; j++) {
-            for (unsigned int k=0; k<m_uiDeps; k++) at(l,i,j,k) = value;
+    for (uint i=0; i<m_uiRows; i++) {
+        for (uint j=0; j<m_uiCols; j++) {
+            for (uint k=0; k<m_uiDeps; k++) at(l,i,j,k) = value;
         } 
     }
 }
 
 void Matrix::set_init() {
-    for (unsigned int i=0; i<m_uiRows; i++) {
-        for (unsigned int j=0; j<m_uiCols; j++) {
-            for (unsigned int k=0; k<m_uiDeps; k++) at(0,i,j,k) = (float)(i*i) / (float)((m_uiRows - 1)*(m_uiRows - 1));
+    for (uint i=0; i<m_uiRows; i++) {
+        for (uint j=0; j<m_uiCols; j++) {
+            for (uint k=0; k<m_uiDeps; k++) at(0,i,j,k) = (float)(i*i) / (float)((m_uiRows - 1)*(m_uiRows - 1));
         } 
     }
 }
 
-float & Matrix::at( unsigned int n, unsigned int r, unsigned int c, unsigned int d ) {
+float & Matrix::at( uint n, uint r, uint c, uint d ) {
     return m_pData[(n) * m_uiRows * m_uiCols * m_uiDeps + (r) * m_uiCols * m_uiDeps + (c) * m_uiDeps + (d)];
+}
+
+void copy( Matrix *src, Matrix *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end ) {
+
 }
