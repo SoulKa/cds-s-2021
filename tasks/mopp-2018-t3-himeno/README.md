@@ -15,6 +15,8 @@
 
 - converted everything from C to C++
 - made the `Matrix` struct an own class with member functions
+- copying the contents form the matrix `wrk2` to `p` after every iteration in parallel
+- calculating parts of the `wrk2` matrix for each iteration in parallel without locks
 
 ## Problems
 
