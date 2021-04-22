@@ -2,8 +2,12 @@
 #define __HEADER_MATRIX__
 
 #include "common.h"
+
 #include <cstring>
+#include <algorithm>
+
 #include <stdio.h>
+#include <assert.h>
 
 template<typename T>
 class Matrix {
@@ -24,9 +28,12 @@ class Matrix {
          * @brief Fills the whole matrix at num n with the given
          * value
          * @param n The num/level to access
-         * @param val The value to fill the matrix with
+         * @param value The value to fill the matrix with
          */
-        void set(int n, T val);
+        void fill(T value, uint n );
+        void fill(T value);
+
+        void fill_partial( T value, uint n_begin, uint n_end );
 
         void set_init();
 
@@ -42,8 +49,8 @@ class Matrix {
 
         /**
          * @brief Copies the contents of given src matrix into the dst matrix
-         * @param src The source
-         * @param dst The destination
+         * @param src The source matrix
+         * @param dst The destination matrix
          * @param n_begin The first num to copy
          * @param r_begin The first row to copy
          * @param c_begin The first column to copy
@@ -53,7 +60,9 @@ class Matrix {
          * @param c_end The column to end copying (excluding)
          * @param d_end The depth to end copying (excluding)
          */
-        static void copy( Matrix<T> *src, Matrix<T> *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end );
+        static void copy_partial( Matrix<T> *src, Matrix<T> *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end );
+        static void copy( Matrix<T> *src, Matrix<T> *dst, uint n );
+        static void copy( Matrix<T> *src, Matrix<T> *dst );
 
 };
 

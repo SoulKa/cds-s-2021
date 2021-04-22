@@ -107,22 +107,16 @@ int main() {
     };
 
     matrices.p.set_init();
-    matrices.bnd.set(0,1.0);
-    matrices.wrk1.set(0,0.0);
-    matrices.wrk2.set(0,0.0);
+    matrices.bnd.fill(1.0, 0);
+    matrices.wrk1.fill(0.0, 0);
+    mat_float64_t::copy(&matrices.p, &matrices.wrk2);
 
-    matrices.a.set(0,1.0);
-    matrices.a.set(1,1.0);
-    matrices.a.set(2,1.0);
-    matrices.a.set(3,1.0/6.0);
+    matrices.a.fill_partial(1.0, 0, 3);
+    matrices.a.fill(1.0/6.0, 3);
 
-    matrices.b.set(0,0.0);
-    matrices.b.set(1,0.0);
-    matrices.b.set(2,0.0);
+    matrices.b.fill(0.0);
 
-    matrices.c.set(0,1.0);
-    matrices.c.set(1,1.0);
-    matrices.c.set(2,1.0);
+    matrices.c.fill(1.0);
 
     // print result
     printf("%.6f\n", jacobi(nn, &matrices));
@@ -208,7 +202,8 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
         // copy matrix in parallel
-        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
+        //mat_float64_t::copy(&matrices->wrk2, &matrices->p, 0);
+        for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, &matrices->wrk2, &matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p.m_uiRows-1, matrices->p.m_uiCols-1, d_ranges[i+1]);
         for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();
 
         //fprintf(stderr, "Iteration %u done...\n\n", n);

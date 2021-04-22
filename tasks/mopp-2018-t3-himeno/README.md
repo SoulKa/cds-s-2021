@@ -17,6 +17,7 @@
 - made the `Matrix` struct an own class with member functions
 - copying the contents form the matrix `wrk2` to `p` after every iteration in parallel
 - calculating parts of the `wrk2` matrix for each iteration in parallel without locks
+- reduced the preparation time of the matrices by using `std::fill_n()` to fill the matrices with initial values
 
 ## Problems
 
