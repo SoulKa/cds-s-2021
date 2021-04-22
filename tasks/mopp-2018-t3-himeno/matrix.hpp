@@ -1,4 +1,4 @@
-#define FILL_MUTLITHREADED false
+#define FILL_MUTLITHREADED true
 
 template<typename T>
 Matrix<T>::Matrix( uint nums, uint rows, uint cols, uint deps, uint num_threads ) :
