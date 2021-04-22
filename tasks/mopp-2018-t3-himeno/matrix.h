@@ -2,6 +2,8 @@
 #define __HEADER_MATRIX__
 
 #include "common.h"
+#include <cstring>
+#include <stdio.h>
 
 template<typename T>
 class Matrix {

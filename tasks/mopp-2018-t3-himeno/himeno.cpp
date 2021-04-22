@@ -169,9 +169,9 @@ void calculate_part( double *gosa, matrix_set_t *matrices, uint d_begin, uint d_
 
     //fprintf(stderr, "Workin from %u up to %u\n", d_begin, d_end);
 
-    for (uint d = d_begin; d < d_end; d++) {
+    for (uint r = 1; r < matrices->p.m_uiRows-1; r++) {
         for (uint c = 1; c < matrices->p.m_uiCols-1; c++) {
-            for (uint r = 1; r < matrices->p.m_uiRows-1; r++) calculate_at(gosa, matrices, r, c, d);
+            for (uint d = d_begin; d < d_end; d++) calculate_at(gosa, matrices, r, c, d);
         }
     }
 

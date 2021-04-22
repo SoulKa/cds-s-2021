@@ -1,9 +1,3 @@
-#include "matrix.h"
-
-#include <algorithm>
-
-#include <stdio.h>
-
 template<typename T>
 Matrix<T>::Matrix( uint nums, uint rows, uint cols, uint deps )
     : m_uiNums(nums), m_uiRows(rows), m_uiCols(cols), m_uiDeps(deps), m_pData(new T[nums * rows * cols * deps * sizeof(T)]) {}
@@ -33,20 +27,16 @@ void Matrix<T>::set_init() {
 
 template<typename T>
 T & Matrix<T>::at( uint n, uint r, uint c, uint d ) {
-    return m_pData[(d) * m_uiCols * m_uiRows * m_uiNums + (c) * m_uiRows * m_uiNums + (r) * m_uiNums + (n)];
+    return m_pData[(n) * m_uiRows * m_uiCols * m_uiDeps + (r) * m_uiCols * m_uiDeps + (c) * m_uiDeps + (d)];
 }
 
 template<typename T>
 void Matrix<T>::copy( Matrix<T> *src, Matrix<T> *dst, uint n_begin, uint r_begin, uint c_begin, uint d_begin, uint n_end, uint r_end, uint c_end, uint d_end ) {
-
-    //fprintf(stderr, "Copying from [%u, %u, %u, %u] up to [%u, %u, %u, %u]\n", n_begin, r_begin, c_begin, d_begin, n_end, r_end, c_end, d_end);
-
-    for (uint d = d_begin; d < d_end; d++) {
-        for (uint c = c_begin; c < c_end; c++) {
-            for (uint r = r_begin; r < r_end; r++) {
-                for (uint n = n_begin; n < n_end; n++) dst->at(n, r, c, d) = src->at(n, r, c, d);
+    for (uint n = n_begin; n < n_end; n++) {
+        for (uint r = r_begin; r < r_end; r++) {
+            for (uint c = c_begin; c < c_end; c++) {
+                std::memcpy(&dst->at(n, r, c, d_begin), &src->at(n, r, c, d_begin), (d_end-d_begin)*sizeof(T));
             }
         }
     }
-
 }
