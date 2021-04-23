@@ -46,8 +46,11 @@ using namespace std;
 #define OMEGA 0.8
 #define ONE_SIXTH 1.0/6.0
 
+
 // GLOBAL VARS
 uint NUM_CORES;
+Matrix<FLOAT_TYPE_TO_USE> *p;
+Matrix<FLOAT_TYPE_TO_USE> *wrk;
 
 #if MEASURE_TIME
     int64_t ts_beginning;
@@ -94,14 +97,12 @@ int main( int argc, char *argv[] ) {
     cerr << endl;
 
     // create matrices
-    matrix_set_t matrices = {
-        new mat_float64_t(mimax, mjmax, mkmax, NUM_CORES),   // p
-        new mat_float64_t(mimax, mjmax, mkmax, NUM_CORES)   // wrk
-    };
+    p = new Matrix<FLOAT_TYPE_TO_USE>(mimax, mjmax, mkmax, NUM_CORES);
+    wrk =  new Matrix<FLOAT_TYPE_TO_USE>(mimax, mjmax, mkmax, NUM_CORES);
 
     // initialize matrices
-    matrices.p->set_init();
-    mat_float64_t::copy(matrices.p, matrices.wrk);
+    p->set_init();
+    Matrix<FLOAT_TYPE_TO_USE>::copy(p, wrk);
 
     #ifdef MEASURE_TIME
         time_preparation = get_timestamp(ts_beginning);
@@ -111,7 +112,7 @@ int main( int argc, char *argv[] ) {
     #endif
 
     // print result
-    printf("%.6f\n", jacobi(nn, &matrices));
+    printf("%.6f\n", jacobi(nn));
 
     #ifdef MEASURE_TIME
         time_jacobi = get_timestamp(ts_jacobi_beginning);
@@ -133,30 +134,30 @@ int main( int argc, char *argv[] ) {
 
 }
 
-void calculate_part( uint thread_number, double *gosa, matrix_set_t *matrices, uint d_begin, uint d_end ) {
+void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, uint d_begin, uint d_end ) {
 
     #ifdef MEASURE_TIME
         const auto now = get_timestamp();
     #endif
 
     // vars
-    double s0, ss, current_value;
+    FLOAT_TYPE_TO_USE s0, ss, current_value;
 
-    for (uint r = 1; r < matrices->p->m_uiRows-1; r++) {
-        for (uint c = 1; c < matrices->p->m_uiCols-1; c++) {
+    for (uint r = 1; r < p->m_uiRows-1; r++) {
+        for (uint c = 1; c < p->m_uiCols-1; c++) {
             for (uint d = d_begin; d < d_end; d++) {
 
-                current_value = matrices->p->at(r, c, d);
+                current_value = p->at(r, c, d);
 
-                s0 = matrices->p->at(r+1,c,d)
-                    + matrices->p->at(r,c+1,d)
-                    + matrices->p->at(r,c,d+1)
-                    + matrices->p->at(r-1,c,d)
-                    + matrices->p->at(r,c-1,d)
-                    + matrices->p->at(r,c,d-1);
+                s0 = p->at(r+1,c,d)
+                    + p->at(r,c+1,d)
+                    + p->at(r,c,d+1)
+                    + p->at(r-1,c,d)
+                    + p->at(r,c-1,d)
+                    + p->at(r,c,d-1);
 
                 ss = (s0*ONE_SIXTH - current_value);
-                matrices->wrk->at(r, c, d) = current_value + OMEGA*ss;
+                wrk->at(r, c, d) = current_value + OMEGA*ss;
 
                 if (gosa != nullptr) (*gosa) += ss*ss;
             }
@@ -169,11 +170,11 @@ void calculate_part( uint thread_number, double *gosa, matrix_set_t *matrices, u
     
 }
 
-double jacobi( uint nn, matrix_set_t *matrices ) {
+FLOAT_TYPE_TO_USE jacobi( uint nn ) {
 
     // for the final (combined) result
-    double gosa = 0.0f;
-    mat_float64_t *p_mat_tmp;
+    FLOAT_TYPE_TO_USE gosa = 0.0f;
+    Matrix<FLOAT_TYPE_TO_USE> *p_mat_tmp;
     const auto NUM_CORES_MINUS_ONE = NUM_CORES-1;
 
     // create thread array
@@ -181,11 +182,11 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
 
     // the working ranges for the threads
     auto d_ranges = new uint[NUM_CORES+1];
-    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((matrices->p->m_uiDeps-2)/NUM_CORES);
-    d_ranges[NUM_CORES] = matrices->p->m_uiDeps-1;
+    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = 1+i*((p->m_uiDeps-2)/NUM_CORES);
+    d_ranges[NUM_CORES] = p->m_uiDeps-1;
 
     // the partial results
-    auto gosa_arr = new double[NUM_CORES];
+    auto gosa_arr = new FLOAT_TYPE_TO_USE[NUM_CORES];
     fill_n(gosa_arr, NUM_CORES, 0.0f);
 
     // start to calculate
@@ -196,8 +197,8 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         #endif
 
         // calculate in parallel
-        for (uint i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == nn-1 ? gosa_arr+i : nullptr, matrices, d_ranges[i], d_ranges[i+1]);
-        calculate_part(NUM_CORES_MINUS_ONE, n == nn-1 ? gosa_arr+NUM_CORES_MINUS_ONE : nullptr, matrices, d_ranges[NUM_CORES_MINUS_ONE], d_ranges[NUM_CORES]);
+        for (uint i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == nn-1 ? gosa_arr+i : nullptr, d_ranges[i], d_ranges[i+1]);
+        calculate_part(NUM_CORES_MINUS_ONE, n == nn-1 ? gosa_arr+NUM_CORES_MINUS_ONE : nullptr, d_ranges[NUM_CORES_MINUS_ONE], d_ranges[NUM_CORES]);
         for (uint i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i].join();
 
         #ifdef MEASURE_TIME
@@ -205,9 +206,9 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         #endif
 
         // swap matrices (no copy needed)
-        p_mat_tmp = matrices->p;
-        matrices->p = matrices->wrk;
-        matrices->wrk = p_mat_tmp;
+        p_mat_tmp = p;
+        p = wrk;
+        wrk = p_mat_tmp;
         
     }
 

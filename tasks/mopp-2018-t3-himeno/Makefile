@@ -7,6 +7,9 @@ all: $(EXEC)
 $(EXEC):
 	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
+float64:
+	$(CXX) $(CXXFLAGS) -D USE_FLOAT64 $(EXEC).cpp -o $(EXEC)
+
 run:
 	cat $(EXEC).in | ./$(EXEC) 
 
