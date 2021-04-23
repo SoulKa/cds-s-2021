@@ -65,27 +65,33 @@ uint NUM_CORES;
 
 // FUNCTIONS
 
-int main() {
+int main( int argc, char *argv[] ) {
 
     #ifdef MEASURE_TIME
         ts_beginning = get_timestamp();
     #endif
 
-    uint nn, mimax, mjmax, mkmax, msize[3];
+    uint nn, mimax, mjmax, mkmax;
 
     // get amount of cores
     NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
     assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
     cerr << "Working with " << NUM_CORES << " cores" << endl;
 
-    cin >> msize[0];
-    cin >> msize[1];
-    cin >> msize[2];
-    cin >> nn;
-    
-    mimax = msize[0];
-    mjmax = msize[1];
-    mkmax = msize[2];
+    if (argc == 5) {
+        mimax = stoul(argv[1]);
+        mjmax = stoul(argv[2]);
+        mkmax = stoul(argv[3]);
+        nn = stoul(argv[4]);
+    } else {
+        cin >> mimax;
+        cin >> mjmax;
+        cin >> mkmax;
+        cin >> nn;
+    }
+
+    fprintf(stderr, "Matrix size is %ux%ux%u with %u iterations", mimax, mjmax, mkmax, nn);
+    cerr << endl;
 
     // create matrices
     matrix_set_t matrices = {

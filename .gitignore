@@ -4,6 +4,7 @@
 # Local History for Visual Studio Code
 .history/
 
+run.sh
 profiling.txt
 
 *.png
