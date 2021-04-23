@@ -1,13 +1,15 @@
 template<typename T>
-Matrix<T>::Matrix( uint rows, uint cols, uint deps, uint num_threads ) :
+Matrix<T>::Matrix( int rows, int cols, int deps, uint num_threads ) :
     m_uiRows(rows),
     m_uiCols(cols),
     m_uiDeps(deps),
     m_pData(new T[rows*cols*deps]),
+    m_uiDataSize(rows*cols*deps),
     m_uiRowMemoryOffset(cols * deps),
     m_uiNumThreads(num_threads),
     m_pThreads(new std::thread[num_threads]),
-    m_pWorking_ranges(new uint[num_threads+1])
+    m_pWorking_ranges(new int[num_threads+1]),
+    m_uiRowsSquared((rows+1)*(rows+1))
 {
 
     // calculate the working ranges for the threads
@@ -23,16 +25,12 @@ Matrix<T>::~Matrix() {
 }
 
 template<typename T>
-void Matrix<T>::set_init_partial( Matrix<T> *m, uint r_begin, uint r_end ) {
+void Matrix<T>::set_init_partial( Matrix<T> *m, int r_begin, int r_end ) {
     
-    const T num_rows_squared = (T)((m->m_uiRows - 1)*(m->m_uiRows - 1));
     T value;
-
-    for (uint r = r_begin; r < r_end; r++) {
-        value = (T)(r*r) / num_rows_squared;
-        for (uint c = 0; c < m->m_uiCols; c++) {
-            for (uint d = 0; d < m->m_uiDeps; d++) m->at(r, c, d) = value;
-        }
+    for (int r = r_begin; r < r_end; r++) {
+        value = (T)((r+1)*(r+1)) / (T)((m->m_uiRows+1)*(m->m_uiRows+1));
+        std::fill_n(&m->at(r, 0, 0), m->m_uiRowMemoryOffset, value);
     }
 
 }
@@ -44,7 +42,15 @@ void Matrix<T>::set_init() {
 }
 
 template<typename T>
-T & Matrix<T>::at( uint r, uint c, uint d ) {
+T & Matrix<T>::at( int r, int c, int d ) {
+    return m_pData[r * m_uiRowMemoryOffset + c * m_uiDeps + d];
+}
+
+template<typename T>
+T Matrix<T>::get( int r, int c, int d ) {
+    if (r == -1) return 0.0;
+    if (r == m_uiRows) return 1.0;
+    if (c == -1 || d == -1 || c == m_uiCols || d == m_uiDeps) return (T)((r+1)*(r+1)) / (T)((m_uiRows+1)*(m_uiRows+1));
     return m_pData[r * m_uiRowMemoryOffset + c * m_uiDeps + d];
 }
 

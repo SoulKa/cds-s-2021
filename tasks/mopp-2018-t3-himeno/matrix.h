@@ -15,14 +15,15 @@ class Matrix {
 
     public:
 
-        const uint m_uiRows = 0;
-        const uint m_uiCols = 0;
-        const uint m_uiDeps = 0;
+        const int m_uiRows = 0;
+        const int m_uiCols = 0;
+        const int m_uiDeps = 0;
         T* const m_pData = nullptr;
-        const uint m_uiRowMemoryOffset = 0;
+        const int m_uiDataSize = 0;
+        const int m_uiRowMemoryOffset = 0;
 
         Matrix() {}
-        Matrix( uint rows, uint cols, uint deps, uint num_threads );
+        Matrix( int rows, int cols, int deps, uint num_threads );
         ~Matrix();
 
         void set_init();
@@ -34,7 +35,8 @@ class Matrix {
          * @param depth The depth to access it at
          * @return A reference to the float at the given position
          */
-        T & at( uint row, uint col, uint depth );
+        T & at( int row, int col, int depth );
+        T get( int row, int col, int depth );
 
         /**
          * @brief Copies the contents of given src matrix into the dst matrix
@@ -47,9 +49,10 @@ class Matrix {
 
         const uint m_uiNumThreads = 0;
         std::thread* const m_pThreads = nullptr;
-        uint* const m_pWorking_ranges = nullptr;
+        int* const m_pWorking_ranges = nullptr;
+        const T m_uiRowsSquared = 0;
 
-        static void set_init_partial( Matrix<T> *m, uint r_begin, uint r_end );
+        static void set_init_partial( Matrix<T> *m, int r_begin, int r_end );
 
 };
 
