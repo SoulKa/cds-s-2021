@@ -89,12 +89,8 @@ int main() {
 
     // create matrices
     matrix_set_t matrices = {
-        /*new mat_float64_t(4, mimax, mjmax, mkmax, NUM_CORES),   // a
-        new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // b
-        new mat_float64_t(3, mimax, mjmax, mkmax, NUM_CORES),   // c*/
-        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // p
-        //new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES),   // bnd
-        new mat_float64_t(1, mimax, mjmax, mkmax, NUM_CORES)   // wrk
+        new mat_float64_t(mimax, mjmax, mkmax, NUM_CORES),   // p
+        new mat_float64_t(mimax, mjmax, mkmax, NUM_CORES)   // wrk
     };
 
     // initialize matrices
@@ -153,12 +149,12 @@ void calculate_part( uint thread_number, double *gosa, matrix_set_t *matrices, u
 
                 p_offset = r * r_memory_offset + c * matrices->p->m_uiDeps + d;
 
-                s0 = matrices->p->at(0,r+1,c,d)
-                    + matrices->p->at(0,r,c+1,d)
-                    + matrices->p->at(0,r,c,d+1)
-                    + matrices->p->at(0,r-1,c,d)
-                    + matrices->p->at(0,r,c-1,d)
-                    + matrices->p->at(0,r,c,d-1);
+                s0 = matrices->p->at(r+1,c,d)
+                    + matrices->p->at(r,c+1,d)
+                    + matrices->p->at(r,c,d+1)
+                    + matrices->p->at(r-1,c,d)
+                    + matrices->p->at(r,c-1,d)
+                    + matrices->p->at(r,c,d-1);
 
                 ss = (s0*ONE_SIXTH - matrices->p->m_pData[p_offset]);
                 matrices->wrk->m_pData[p_offset] = matrices->p->m_pData[p_offset] + OMEGA*ss;
