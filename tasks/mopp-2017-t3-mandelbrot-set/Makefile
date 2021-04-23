@@ -6,8 +6,7 @@ EXEC=mandelbrot
 all: $(EXEC)
 
 $(EXEC):
-	$(CXX) $(CXXFLAGS) $(EXEC).cpp -c -o $(EXEC).o
-	$(CXX) $(CXXFLAGS) $(EXEC).o -o $(EXEC)
+	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
 run:
 	cat judge.in | ./$(EXEC) >test.out 2>/dev/null
