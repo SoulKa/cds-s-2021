@@ -30,6 +30,9 @@
 - substituted the many occurances of `m->at(n,r,c,d)` by precalculated memory offsets
 - remove all matrices except `wrk` and `p` since they were useless
 - only calculate `gosa` in the last iteration
+- removed the `n` property/layer from matrices as it is unused now
+- shrinked the matrices by 2 since the outmost values of each row, column or depth never change. With this change the pointers to the values that is worked on are ever-increasing
+- **Important one:** Made an atomic variable that contains the next row for a thread to work on. This is different to the algorithm before because the threads work on memory that is close to one another. This should reduce cache misses when having many threads. Also the working range for each thread was badly selected. Before, every thread got a range of **depths** to work on, instead a thread should have a range of **rows** to work on since data in rows is subsequent in memory while it is not for subsequent depths.
 
 ## Problems
 
