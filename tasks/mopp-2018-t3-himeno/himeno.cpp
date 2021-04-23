@@ -136,54 +136,35 @@ int main() {
 
 }
 
-void calculate_at( double *gosa, matrix_set_t *matrices, uint i, uint j, uint k ) {
-    
-    uint p_offset = i * matrices->p->m_uiCols*matrices->p->m_uiDeps + j * matrices->p->m_uiDeps + k;
-    /*uint p_num_offset = matrices->p->m_uiRows*matrices->p->m_uiCols*matrices->p->m_uiDeps;
-    uint p_n1_offset = p_num_offset + p_offset;
-    uint p_n2_offset = 2*p_num_offset + p_offset;*/
-
-    double s0 = /*matrices->a->m_pData[p_offset] **/ matrices->p->at(0,i+1,j,k)
-        + /*matrices->a->m_pData[p_n1_offset] **/ matrices->p->at(0,i,j+1,k)
-        + /*matrices->a->m_pData[p_n2_offset] **/ matrices->p->at(0,i,j,k+1)
-        /*+ matrices->b->m_pData[p_offset] * (
-            matrices->p->at(0,i+1,j+1,k)
-            - matrices->p->at(0,i+1,j-1,k)
-            - matrices->p->at(0,i-1,j+1,k)
-            + matrices->p->at(0,i-1,j-1,k)
-        )
-        + matrices->b->m_pData[p_n1_offset] * (
-            matrices->p->at(0,i,j+1,k+1)
-            - matrices->p->at(0,i,j-1,k+1)
-            - matrices->p->at(0,i,j+1,k-1)
-            + matrices->p->at(0,i,j-1,k-1)
-        )
-        + matrices->b->m_pData[p_n2_offset] * (
-            matrices->p->at(0,i+1,j,k+1)
-            - matrices->p->at(0,i-1,j,k+1)
-            - matrices->p->at(0,i+1,j,k-1)
-            + matrices->p->at(0,i-1,j,k-1)
-        )*/
-        + /*matrices->c->m_pData[p_offset] **/ matrices->p->at(0,i-1,j,k)
-        + /*matrices->c->m_pData[p_n1_offset] **/ matrices->p->at(0,i,j-1,k)
-        + /*matrices->c->m_pData[p_n2_offset] **/ matrices->p->at(0,i,j,k-1);
-
-    double ss = (s0*ONE_SIXTH - matrices->p->m_pData[p_offset])/* * matrices->bnd->m_pData[p_offset]*/;
-    matrices->wrk->m_pData[p_offset] = matrices->p->m_pData[p_offset] + OMEGA*ss;
-
-    if (gosa != nullptr) (*gosa) += ss*ss;
-
-}
-
 void calculate_part( uint thread_number, double *gosa, matrix_set_t *matrices, uint d_begin, uint d_end ) {
 
     #ifdef MEASURE_TIME
         const auto now = get_timestamp();
     #endif
-    
+
+    // vars
+    double s0, ss;
+    uint p_offset;
+    uint r_memory_offset = matrices->p->m_uiCols*matrices->p->m_uiDeps;
+
     for (uint r = 1; r < matrices->p->m_uiRows-1; r++) {
         for (uint c = 1; c < matrices->p->m_uiCols-1; c++) {
-            for (uint d = d_begin; d < d_end; d++) calculate_at(gosa, matrices, r, c, d);
+            for (uint d = d_begin; d < d_end; d++) {
+
+                p_offset = r * r_memory_offset + c * matrices->p->m_uiDeps + d;
+
+                s0 = matrices->p->at(0,r+1,c,d)
+                    + matrices->p->at(0,r,c+1,d)
+                    + matrices->p->at(0,r,c,d+1)
+                    + matrices->p->at(0,r-1,c,d)
+                    + matrices->p->at(0,r,c-1,d)
+                    + matrices->p->at(0,r,c,d-1);
+
+                ss = (s0*ONE_SIXTH - matrices->p->m_pData[p_offset]);
+                matrices->wrk->m_pData[p_offset] = matrices->p->m_pData[p_offset] + OMEGA*ss;
+
+                if (gosa != nullptr) (*gosa) += ss*ss;
+            }
         }
     }
 

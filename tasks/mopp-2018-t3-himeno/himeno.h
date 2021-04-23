@@ -11,11 +11,7 @@ typedef Vector4<uint> vec4_uint_t;
 typedef Matrix<double> mat_float64_t;
 
 typedef struct {
-    /*mat_float64_t *a;
-    mat_float64_t *b;
-    mat_float64_t *c;*/
     mat_float64_t *p;
-    //mat_float64_t *bnd;
     mat_float64_t *wrk;
 } matrix_set_t;
 
