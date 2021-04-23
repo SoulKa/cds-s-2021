@@ -51,6 +51,8 @@ using namespace std;
 uint NUM_CORES;
 Matrix<FLOAT_TYPE_TO_USE> *p;
 Matrix<FLOAT_TYPE_TO_USE> *wrk;
+atomic<int> current_row(0);
+
 #ifdef USE_FLOAT64
     #define GOSA_POINTER gosa_arr+i
 #else
@@ -80,7 +82,7 @@ int main( int argc, char *argv[] ) {
         ts_beginning = get_timestamp();
     #endif
 
-    uint nn, mimax, mjmax, mkmax;
+    uint num_iterations, num_rows, num_cols, num_deps;
 
     // get amount of cores
     NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
@@ -88,23 +90,23 @@ int main( int argc, char *argv[] ) {
     cerr << "Working with " << NUM_CORES << " cores" << endl;
 
     if (argc == 5) {
-        mimax = stoul(argv[1]);
-        mjmax = stoul(argv[2]);
-        mkmax = stoul(argv[3]);
-        nn = stoul(argv[4]);
+        num_rows = stoul(argv[1]);
+        num_cols = stoul(argv[2]);
+        num_deps = stoul(argv[3]);
+        num_iterations = stoul(argv[4]);
     } else {
-        cin >> mimax;
-        cin >> mjmax;
-        cin >> mkmax;
-        cin >> nn;
+        cin >> num_rows;
+        cin >> num_cols;
+        cin >> num_deps;
+        cin >> num_iterations;
     }
 
-    fprintf(stderr, "Matrix size is %ux%ux%u with %u iterations", mimax, mjmax, mkmax, nn);
+    fprintf(stderr, "Matrix size is %ux%ux%u with %u iterations", num_rows, num_cols, num_deps, num_iterations);
     cerr << endl;
 
     // create matrices
-    p = new Matrix<FLOAT_TYPE_TO_USE>(mimax-2, mjmax-2, mkmax-2, NUM_CORES);
-    wrk =  new Matrix<FLOAT_TYPE_TO_USE>(mimax-2, mjmax-2, mkmax-2, NUM_CORES);
+    p = new Matrix<FLOAT_TYPE_TO_USE>(num_rows-2, num_cols-2, num_deps-2, NUM_CORES);
+    wrk =  new Matrix<FLOAT_TYPE_TO_USE>(num_rows-2, num_cols-2, num_deps-2, NUM_CORES);
 
     // initialize matrices
     p->set_init();
@@ -118,7 +120,7 @@ int main( int argc, char *argv[] ) {
     #endif
 
     // print result
-    printf("%.6f\n", jacobi(nn));
+    printf("%.6f\n", jacobi(num_iterations));
 
     #ifdef MEASURE_TIME
         time_jacobi = get_timestamp(ts_jacobi_beginning);
@@ -140,43 +142,51 @@ int main( int argc, char *argv[] ) {
 
 }
 
-void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, int d_begin, int d_end ) {
+void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa ) {
 
     #ifdef MEASURE_TIME
         const auto now = get_timestamp();
     #endif
 
     // vars
-    FLOAT_TYPE_TO_USE s0, ss, current_value;
+    FLOAT_TYPE_TO_USE value;
+    FLOAT_TYPE_TO_USE *ptr_p_data;
+    FLOAT_TYPE_TO_USE *ptr_wrk_data;
+    int r, c, d;
 
-    // iterate over the volume (the part this thread is responsible for)
-    for (int r = 0; r < p->m_uiRows; r++) {
-        for (int c = 0; c < p->m_uiCols; c++) {
-            for (int d = d_begin; d < d_end; d++) {
+    // iterate over the volume
+    while ((r = current_row++) < p->m_uiRows) {
 
-                current_value = p->at(r, c, d);
+        // adjust pointers to fit the current row
+        ptr_p_data = p->m_pData + r*p->m_uiRowMemoryOffset;
+        ptr_wrk_data = wrk->m_pData + r*p->m_uiRowMemoryOffset;
 
-                s0 = p->get(r+1,c,d)
-                    + p->get(r,c+1,d)
-                    + p->get(r,c,d+1)
-                    + p->get(r-1,c,d)
-                    + p->get(r,c-1,d)
-                    + p->get(r,c,d-1);
+        for (c = 0; c < p->m_uiCols; c++) {
+            for (d = 0; d < p->m_uiDeps; d++) {
 
-                ss = (s0*ONE_SIXTH - current_value);
+                // sum up the neighboring values
+                value = (
+                      p->get(r+1,c,d) + p->get(r,c+1,d) + p->get(r,c,d+1)
+                    + p->get(r-1,c,d) + p->get(r,c-1,d) + p->get(r,c,d-1)
+                ) / 6.0 - (*ptr_p_data);
 
+                // check if it is last iteration
                 if (gosa == nullptr) {
-                    wrk->at(r, c, d) = current_value + OMEGA*ss;
+                    (*ptr_wrk_data) = (*ptr_p_data) + OMEGA*value;
                 } else {
                     #ifndef USE_FLOAT64
                         gosa_mutex.lock();
                     #endif
-                    (*gosa) += ss*ss;
+                    (*gosa) += value*value;
                     #ifndef USE_FLOAT64
                         gosa_mutex.unlock();
                     #endif
-                    wrk->at(r, c, d) = current_value + OMEGA*ss;
                 }
+
+                // update pointers
+                ptr_p_data++;
+                ptr_wrk_data++;
+
             }
         }
     }
@@ -187,7 +197,7 @@ void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, int d_begin, i
     
 }
 
-FLOAT_TYPE_TO_USE jacobi( uint nn ) {
+FLOAT_TYPE_TO_USE jacobi( uint num_iterations ) {
 
     // for the final (combined) result
     FLOAT_TYPE_TO_USE gosa = 0.0f;
@@ -197,11 +207,6 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
     // create thread array
     auto thread_arr = new thread[NUM_CORES_MINUS_ONE];
 
-    // the working ranges for the threads
-    auto d_ranges = new int[NUM_CORES+1];
-    for (uint i=0; i<NUM_CORES; i++) d_ranges[i] = i*p->m_uiDeps/NUM_CORES;
-    d_ranges[NUM_CORES] = p->m_uiDeps;
-
     // the partial results
     #ifdef USE_FLOAT64
         auto gosa_arr = new FLOAT_TYPE_TO_USE[NUM_CORES];
@@ -210,16 +215,17 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
 
     // start to calculate
     uint i;
-    for (uint n=0; n<nn; n++) {
+    for (uint n = 0; n < num_iterations; n++) {
 
         #ifdef MEASURE_TIME
             ts_temp = get_timestamp();
         #endif
 
         // calculate in parallel
-        for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[i+1]);
-        calculate_part(i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[NUM_CORES]);
+        for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == num_iterations-1 ? GOSA_POINTER : nullptr);
+        calculate_part(i, n == num_iterations-1 ? GOSA_POINTER : nullptr);
         for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i].join();
+        current_row = 0;
 
         #ifdef MEASURE_TIME
             time_calculation += get_timestamp(ts_temp);
@@ -240,7 +246,6 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
 
     // free ressources
     delete[] thread_arr;
-    delete[] d_ranges;
 
     // done
     return gosa;
