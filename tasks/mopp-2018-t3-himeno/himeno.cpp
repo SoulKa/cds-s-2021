@@ -95,18 +95,13 @@ int main() {
 
     // initialize matrices
     matrices.p->set_init();
-    //matrices.bnd->fill(1.0);
     mat_float64_t::copy(matrices.p, matrices.wrk);
-
-    /*matrices.a->fill_partial(1.0, 0, 3);
-    matrices.a->fill(1.0/6.0, 3);
-    matrices.b->fill(0.0);
-    matrices.c->fill(1.0);*/
 
     #ifdef MEASURE_TIME
         time_preparation = get_timestamp(ts_beginning);
         ts_jacobi_beginning = get_timestamp();
         times_threads = new int64_t[NUM_CORES];
+        fill_n(times_threads, NUM_CORES, 0);
     #endif
 
     // print result
@@ -139,15 +134,13 @@ void calculate_part( uint thread_number, double *gosa, matrix_set_t *matrices, u
     #endif
 
     // vars
-    double s0, ss;
-    uint p_offset;
-    uint r_memory_offset = matrices->p->m_uiCols*matrices->p->m_uiDeps;
+    double s0, ss, current_value;
 
     for (uint r = 1; r < matrices->p->m_uiRows-1; r++) {
         for (uint c = 1; c < matrices->p->m_uiCols-1; c++) {
             for (uint d = d_begin; d < d_end; d++) {
 
-                p_offset = r * r_memory_offset + c * matrices->p->m_uiDeps + d;
+                current_value = matrices->p->at(r, c, d);
 
                 s0 = matrices->p->at(r+1,c,d)
                     + matrices->p->at(r,c+1,d)
@@ -156,8 +149,8 @@ void calculate_part( uint thread_number, double *gosa, matrix_set_t *matrices, u
                     + matrices->p->at(r,c-1,d)
                     + matrices->p->at(r,c,d-1);
 
-                ss = (s0*ONE_SIXTH - matrices->p->m_pData[p_offset]);
-                matrices->wrk->m_pData[p_offset] = matrices->p->m_pData[p_offset] + OMEGA*ss;
+                ss = (s0*ONE_SIXTH - current_value);
+                matrices->wrk->at(r, c, d) = current_value + OMEGA*ss;
 
                 if (gosa != nullptr) (*gosa) += ss*ss;
             }
@@ -204,10 +197,6 @@ double jacobi( uint nn, matrix_set_t *matrices ) {
         #ifdef MEASURE_TIME
             time_calculation += get_timestamp(ts_temp);
         #endif
-
-        // copy matrix in parallel
-        /*for (uint i=0; i<NUM_CORES; i++) thread_arr[i] = thread(mat_float64_t::copy_partial, matrices->wrk, matrices->p, 0, 1, 1, d_ranges[i], 1, matrices->p->m_uiRows-1, matrices->p->m_uiCols-1, d_ranges[i+1]);
-        for (uint i=0; i<NUM_CORES; i++) thread_arr[i].join();*/
 
         // swap matrices (no copy needed)
         p_mat_tmp = matrices->p;
