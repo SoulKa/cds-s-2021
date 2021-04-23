@@ -51,6 +51,12 @@ using namespace std;
 uint NUM_CORES;
 Matrix<FLOAT_TYPE_TO_USE> *p;
 Matrix<FLOAT_TYPE_TO_USE> *wrk;
+#ifdef USE_FLOAT64
+    #define GOSA_POINTER gosa_arr+i
+#else
+    mutex gosa_mutex;
+    #define GOSA_POINTER &gosa
+#endif
 
 #if MEASURE_TIME
     int64_t ts_beginning;
@@ -159,7 +165,15 @@ void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, uint d_begin, 
                 ss = (s0*ONE_SIXTH - current_value);
                 wrk->at(r, c, d) = current_value + OMEGA*ss;
 
-                if (gosa != nullptr) (*gosa) += ss*ss;
+                if (gosa != nullptr) {
+                    #ifndef USE_FLOAT64
+                        gosa_mutex.lock();
+                    #endif
+                    (*gosa) += ss*ss;
+                    #ifndef USE_FLOAT64
+                        gosa_mutex.unlock();
+                    #endif
+                }
             }
         }
     }
@@ -186,10 +200,13 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
     d_ranges[NUM_CORES] = p->m_uiDeps-1;
 
     // the partial results
-    auto gosa_arr = new FLOAT_TYPE_TO_USE[NUM_CORES];
-    fill_n(gosa_arr, NUM_CORES, 0.0f);
+    #ifdef USE_FLOAT64
+        auto gosa_arr = new FLOAT_TYPE_TO_USE[NUM_CORES];
+        fill_n(gosa_arr, NUM_CORES, 0.0f);
+    #endif
 
     // start to calculate
+    uint i;
     for (uint n=0; n<nn; n++) {
 
         #ifdef MEASURE_TIME
@@ -197,9 +214,9 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
         #endif
 
         // calculate in parallel
-        for (uint i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == nn-1 ? gosa_arr+i : nullptr, d_ranges[i], d_ranges[i+1]);
-        calculate_part(NUM_CORES_MINUS_ONE, n == nn-1 ? gosa_arr+NUM_CORES_MINUS_ONE : nullptr, d_ranges[NUM_CORES_MINUS_ONE], d_ranges[NUM_CORES]);
-        for (uint i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i].join();
+        for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[i+1]);
+        calculate_part(i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[NUM_CORES]);
+        for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i].join();
 
         #ifdef MEASURE_TIME
             time_calculation += get_timestamp(ts_temp);
@@ -213,11 +230,13 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
     }
 
     // sum up partial gosa
-    for (uint i=0; i<NUM_CORES; i++) gosa += gosa_arr[i];
+    #ifdef USE_FLOAT64
+        for (uint i=0; i<NUM_CORES; i++) gosa += gosa_arr[i];
+        delete[] gosa_arr;
+    #endif
 
     // free ressources
     delete[] thread_arr;
-    delete[] gosa_arr;
     delete[] d_ranges;
 
     // done
