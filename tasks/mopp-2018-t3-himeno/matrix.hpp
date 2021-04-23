@@ -3,7 +3,7 @@ Matrix<T>::Matrix( uint rows, uint cols, uint deps, uint num_threads ) :
     m_uiRows(rows),
     m_uiCols(cols),
     m_uiDeps(deps),
-    m_pData(new T[rows * cols * deps * sizeof(T)]),
+    m_pData(new T[rows*cols*deps]),
     m_uiRowMemoryOffset(cols * deps),
     m_uiNumThreads(num_threads),
     m_pThreads(new std::thread[num_threads]),
@@ -45,11 +45,10 @@ void Matrix<T>::set_init() {
 
 template<typename T>
 T & Matrix<T>::at( uint r, uint c, uint d ) {
-    //return m_pData[r * m_uiRowMemoryOffset + c * m_uiDeps + d];
     return m_pData[r * m_uiRowMemoryOffset + c * m_uiDeps + d];
 }
 
 template<typename T>
 void Matrix<T>::copy( Matrix<T> *src, Matrix<T> *dst ) {
-    std::memcpy(dst->m_pData, src->m_pData, (src->m_uiRows * src->m_uiDeps * src->m_uiDeps) * sizeof(T));
+    std::memcpy(dst->m_pData, src->m_pData, (src->m_uiRows * src->m_uiCols * src->m_uiDeps) * sizeof(T));
 }
