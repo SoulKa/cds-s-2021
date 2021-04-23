@@ -6,10 +6,15 @@
 
 > **Optimal Desired Speedup:** 13x or 93,99% parallel code
 
+**Basetime:** 768279655 microsecs
+
 **Measurements:**
-| Version | Setting | Parallel code part |
+| Version | Setting | Speedup | commit/logs |
 | --- | --- |  --- |
-| 1 | 12 cores on PC | 89,69% |
+| unmodified | 1 core on server | 1x | [e8bb6522](https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-21T12:16:51+02:00.html) |
+| 1 | 12 cores on PC | 5,62x or 89,69% | - |
+| 2 | 1 core on server | 2,31x (to basetime) | [7979d656](https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-23T00:16:49+02:00.html) |
+| 2 | 56 cores on server | 10,54x or 92,16% | [7979d656](https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-23T00:16:49+02:00.html) |
 
 ## Improvements made
 

@@ -149,6 +149,7 @@ void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, uint d_begin, 
     // vars
     FLOAT_TYPE_TO_USE s0, ss, current_value;
 
+    // iterate over the volume (the part this thread is responsible for)
     for (uint r = 1; r < p->m_uiRows-1; r++) {
         for (uint c = 1; c < p->m_uiCols-1; c++) {
             for (uint d = d_begin; d < d_end; d++) {
@@ -163,9 +164,10 @@ void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, uint d_begin, 
                     + p->at(r,c,d-1);
 
                 ss = (s0*ONE_SIXTH - current_value);
-                wrk->at(r, c, d) = current_value + OMEGA*ss;
 
-                if (gosa != nullptr) {
+                if (gosa == nullptr) {
+                    wrk->at(r, c, d) = current_value + OMEGA*ss;
+                } else {
                     #ifndef USE_FLOAT64
                         gosa_mutex.lock();
                     #endif
@@ -173,6 +175,7 @@ void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, uint d_begin, 
                     #ifndef USE_FLOAT64
                         gosa_mutex.unlock();
                     #endif
+                    wrk->at(r, c, d) = current_value + OMEGA*ss;
                 }
             }
         }
