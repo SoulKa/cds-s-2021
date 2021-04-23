@@ -150,63 +150,6 @@ void calculate_part( uint thread_number, FLOAT_TYPE_TO_USE *gosa, int d_begin, i
     FLOAT_TYPE_TO_USE s0, ss, current_value;
 
     // iterate over the volume (the part this thread is responsible for)
-    for (int r = 1; r < p->m_uiRows-1; r++) {
-        for (int c = 1; c < p->m_uiCols-1; c++) {
-            for (int d = d_begin; d < d_end; d++) {
-
-                current_value = p->at(r, c, d);
-
-                s0 = p->at(r+1,c,d)
-                    + p->at(r,c+1,d)
-                    + p->at(r,c,d+1)
-                    + p->at(r-1,c,d)
-                    + p->at(r,c-1,d)
-                    + p->at(r,c,d-1);
-
-                ss = (s0*ONE_SIXTH - current_value);
-
-                if (gosa == nullptr) {
-                    wrk->at(r, c, d) = current_value + OMEGA*ss;
-                } else {
-                    #ifndef USE_FLOAT64
-                        gosa_mutex.lock();
-                    #endif
-                    (*gosa) += ss*ss;
-                    #ifndef USE_FLOAT64
-                        gosa_mutex.unlock();
-                    #endif
-                    wrk->at(r, c, d) = current_value + OMEGA*ss;
-                }
-            }
-        }
-    }
-
-    #ifdef MEASURE_TIME
-        times_threads[thread_number] += get_timestamp(now);
-    #endif
-    
-}
-
-void calculate_part2( uint thread_number, FLOAT_TYPE_TO_USE *gosa, int d_begin, int d_end ) {
-
-    #ifdef MEASURE_TIME
-        const auto now = get_timestamp();
-    #endif
-
-    // vars
-    FLOAT_TYPE_TO_USE s0, ss, current_value;
-
-    // iterate over the volume (the part this thread is responsible for)
-    /*for (uint r = 1; r < p->m_uiRows-1; r++) wrk->at(r, 0, 0) = p->at(r-1, 0, 0)+p->at(r+1, 0, 0);
-    for (uint c = 1; c < p->m_uiCols-1; c++) wrk->at(0, c, 0) += p->at(0, c-1, 0)+p->at(0, c+1, 0);
-    for (uint d = 1; d < p->m_uiDeps-1; d++) wrk->at(0, 0, d) += p->at(0, 0, d-1)+p->at(0, 0, d+1);
-
-    auto ptr_p_data = p->m_pData;
-    auto ptr_wrk_data = wrk->m_pData;
-    for (uint p_offset = 0; p_offset < p->m_uiDataSize; p_offset++) {
-        
-    }*/
-
     for (int r = 0; r < p->m_uiRows; r++) {
         for (int c = 0; c < p->m_uiCols; c++) {
             for (int d = d_begin; d < d_end; d++) {
@@ -274,8 +217,8 @@ FLOAT_TYPE_TO_USE jacobi( uint nn ) {
         #endif
 
         // calculate in parallel
-        for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part2, i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[i+1]);
-        calculate_part2(i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[NUM_CORES]);
+        for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i] = thread(calculate_part, i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[i+1]);
+        calculate_part(i, n == nn-1 ? GOSA_POINTER : nullptr, d_ranges[i], d_ranges[NUM_CORES]);
         for (i=0; i<NUM_CORES_MINUS_ONE; i++) thread_arr[i].join();
 
         #ifdef MEASURE_TIME
