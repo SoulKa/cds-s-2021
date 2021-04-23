@@ -1,4 +1,4 @@
-CXXFLAGS=-O0 -Wall -pthread
+CXXFLAGS=-O0 -std=c++11 -Wall -pthread
 RM=rm -f
 EXEC=himeno
 
