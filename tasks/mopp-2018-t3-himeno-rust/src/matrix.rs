@@ -25,7 +25,7 @@ impl Matrix {
     pub fn init_matrix( &mut self ) {
         let mut value : f64;
         for r in 0..self.rows {
-            value = (r*r) as f64 / ((self.rows-1)*(self.rows-1)) as f64;
+            value = ((r+1)*(r+1)) as f64 / ((self.rows+1)*(self.rows+1)) as f64;
             for c in 0..self.cols {
                 for d in 0..self.deps {
                     *self.at(r, c, d) = value;
@@ -38,8 +38,11 @@ impl Matrix {
         return &mut self.data[ r * self.cols * self.deps + c * self.deps + d ];
     }
 
-    pub fn copy( src : &Matrix, dst : &Matrix ) {
-
+    pub fn get( &mut self, r : isize, c : isize, d : isize ) -> f64 {
+        if r == -1 { return 0.0; }
+        if r == self.rows as isize { return 1.0; }
+        if c == -1 || d == -1 || c == self.cols as isize || d == self.deps as isize { return ((r+1)*(r+1)) as f64 / ((self.rows+1)*(self.rows+1)) as f64; }
+        return *self.at(r as usize, c as usize, d as usize);
     }
 
 }

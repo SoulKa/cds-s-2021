@@ -5,12 +5,7 @@ mod matrix;
 
 use std::io;
 use std::env;
-use std::ptr;
 use std::thread;
-use std::marker;
-use std::mem;
-use std::sync::Mutex;
-use std::sync::Arc;
 use matrix::Matrix;
 
 // DEFINES
@@ -51,27 +46,31 @@ fn calculate_partial( ptr_p : usize, ptr_wrk : usize, r_begin : usize, r_end : u
 
     unsafe {
 
-        let p = ptr_p as *mut Matrix;
-        let wrk = ptr_wrk as *mut Matrix;
+        let p = &mut (*(ptr_p as *mut Matrix));
+        let wrk = &mut (*(ptr_wrk as *mut Matrix));
 
-        let cols = (*p).cols;
-        let deps = (*p).deps;
+        let cols = p.cols;
+        let deps = p.deps;
         let mut gosa = 0.0;
 
         for r in r_begin..r_end {
-            for c in 1..cols-1 {
-                for d in 1..deps-1 {
+            for c in 0..cols {
+                for d in 0..deps {
+
+                    let r_i = r as isize;
+                    let c_i = c as isize;
+                    let d_i = d as isize;
 
                     let value = (
-                        *(*p).at(r+1,c,d) + *(*p).at(r,c+1,d) + *(*p).at(r,c,d+1)
-                    + *(*p).at(r-1,c,d) + *(*p).at(r,c-1,d) + *(*p).at(r,c,d-1)
-                    ) / 6.0 - *(*p).at(r, c, d);
+                        p.get(r_i+1,c_i,d_i) + p.get(r_i,c_i+1,d_i) + p.get(r_i,c_i,d_i+1)
+                        + p.get(r_i-1,c_i,d_i) + p.get(r_i,c_i-1,d_i) + p.get(r_i,c_i,d_i-1)
+                    ) / 6.0 - *p.at(r, c, d);
                     
                     // check if is last iteration
                     if is_last_iteration {
                         gosa += value*value;
                     } else {
-                        *(*wrk).at(r, c, d) = *(*p).at(r, c, d) + 0.8*value;
+                        *wrk.at(r, c, d) = *p.at(r, c, d) + 0.8*value;
                     }
 
                 }
@@ -96,7 +95,7 @@ fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f
     eprintln!("Working with {} threads", num_threads);
 
     // create matrices
-    let mut p = Matrix::new(rows, cols, deps);
+    let mut p = Matrix::new(rows-2, cols-2, deps-2);
     p.init_matrix();
     let mut wrk = Matrix::new_from_other(&p);
 
@@ -104,9 +103,9 @@ fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f
     let mut gosa = 0.0;
     let mut thread_work = vec![0; num_threads+1];
     for i in 0..num_threads {
-        thread_work[i] = 1+i*(p.rows-2)/num_threads;
+        thread_work[i] = i*p.rows/num_threads;
     }
-    thread_work[num_threads] = p.rows-1;
+    thread_work[num_threads] = p.rows;
 
     // pointers
     let mut ptr_p = (&mut p as *mut Matrix) as usize;
@@ -127,7 +126,7 @@ fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f
         for thread in threads {
             match thread.join() {
                 Ok( g ) => gosa += g,
-                Err( e ) => eprintln!("Error inside worker thread!")
+                Err( _e ) => eprintln!("Error inside worker thread!")
             }
         }
 
