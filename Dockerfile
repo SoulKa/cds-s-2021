@@ -34,3 +34,9 @@ RUN cd /tmp/task && \
     make float64 && \
     cp himeno /usr/local/bin/himeno-float64 && \
     rm -rf /tmp/task
+COPY ./tasks/mopp-2018-t3-himeno-rust /tmp/task
+RUN cd /tmp/task && \
+    cargo clean && \
+    cargo build --release && \
+    cp target/release/mopp-2018-t3-himeno-rust /usr/local/bin/himeno-rust && \
+    rm -rf /tmp/task
