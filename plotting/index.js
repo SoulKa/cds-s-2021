@@ -12,8 +12,8 @@ const LOG_DIR = path.join(__dirname, "logs");
 if (!fs.existsSync(PLOT_DIR)) fs.mkdirSync(PLOT_DIR);
 if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR);
 
-// array of log filenames without the ending ".csv"
-const LOG_FILENAMES = fs.readdirSync(LOG_DIR, { withFileTypes: true }).filter( f => f.isFile() && f.name.endsWith(".csv") ).map( f => f.name.slice(0, -4) );
+// array of log filenames without the ending ".txt"
+const LOG_FILENAMES = fs.readdirSync(LOG_DIR, { withFileTypes: true }).filter( f => f.isFile() && f.name.endsWith(".txt") ).map( f => f.name.slice(0, -4) );
 
 /** @type {number[]} Contains the numbers 2^x for x = 0..16 */
 const AMDAHLS_LAW_X = [];
@@ -76,7 +76,7 @@ async function main() {
     for (const filename of LOG_FILENAMES) {
 
         console.log(`Processing logs for ${filename} ...`);
-        const logFilepath = path.join(LOG_DIR, filename+".csv");
+        const logFilepath = path.join(LOG_DIR, filename+".txt");
         const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.png");
         const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.png");
         const log = fs.readFileSync(logFilepath, "utf8");
@@ -95,7 +95,7 @@ async function main() {
 
         // check if valid logfile
         if (data.size === 0) {
-            console.warn(`The log file "${filename}.csv" did not contain any valid lines! Skipping it`);
+            console.warn(`The log file "${filename}.txt" did not contain any valid lines! Skipping it`);
             continue;
         }
 
