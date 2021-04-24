@@ -4,7 +4,13 @@ extern crate num_cpus;
 mod matrix;
 
 use std::io;
+use std::env;
+use std::ptr;
 use std::thread;
+use std::marker;
+use std::mem;
+use std::sync::Mutex;
+use std::sync::Arc;
 use matrix::Matrix;
 
 // DEFINES
@@ -14,8 +20,6 @@ use matrix::Matrix;
 
 // entry point
 fn main() {
-
-    eprintln!("Working with {} threads", num_cpus::get());
 
     // read parameters from stdin
     let rows = read_number_from_stdin() as usize;
@@ -43,45 +47,94 @@ fn read_number_from_stdin() -> u32 {
 
 }
 
-// calculates a gosa (multithreaded)
-fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f64 {
+fn calculate_partial( ptr_p : usize, ptr_wrk : usize, r_begin : usize, r_end : usize, is_last_iteration : bool ) -> f64 {
 
-    // create matrices
-    let mut p = &mut Matrix::new(rows, cols, deps);
-    p.init_matrix();
-    let mut wrk = &mut Matrix::new_from_other(&p);
+    unsafe {
 
-    // vars
-    let mut gosa = 0.0;
-    let mut mat_ref_temp : &mut Matrix;
-    let mut value : f64;
+        let p = ptr_p as *mut Matrix;
+        let wrk = ptr_wrk as *mut Matrix;
 
-    // iterate for the given number of iterations
-    for n in 0..num_iterations {
+        let cols = (*p).cols;
+        let deps = (*p).deps;
+        let mut gosa = 0.0;
 
-        // calculate full matrix
-        for r in 1..rows-1 {
+        for r in r_begin..r_end {
             for c in 1..cols-1 {
                 for d in 1..deps-1 {
-                    value = (
-                        *p.at(r+1,c,d) + *p.at(r,c+1,d) + *p.at(r,c,d+1)
-                      + *p.at(r-1,c,d) + *p.at(r,c-1,d) + *p.at(r,c,d-1)
-                    ) / 6.0 - *p.at(r, c, d);
+
+                    let value = (
+                        *(*p).at(r+1,c,d) + *(*p).at(r,c+1,d) + *(*p).at(r,c,d+1)
+                    + *(*p).at(r-1,c,d) + *(*p).at(r,c-1,d) + *(*p).at(r,c,d-1)
+                    ) / 6.0 - *(*p).at(r, c, d);
                     
                     // check if is last iteration
-                    if n == num_iterations-1 {
+                    if is_last_iteration {
                         gosa += value*value;
                     } else {
-                        *wrk.at(r, c, d) = *p.at(r, c, d) + 0.8*value;
+                        *(*wrk).at(r, c, d) = *(*p).at(r, c, d) + 0.8*value;
                     }
+
                 }
             }
         }
 
-        // swap matrices to prevent copying
-        mat_ref_temp = wrk;
-        wrk = p;
-        p = mat_ref_temp;
+        return gosa;
+
+    }
+
+}
+
+// calculates a gosa (multithreaded)
+fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f64 {
+
+    // get num of threads to use
+    let num_threads : usize;
+    match env::var("MAX_CPUS") {
+        Ok( s ) => num_threads = s.parse().expect(""),
+        Err(_) => num_threads = num_cpus::get()
+    }
+    eprintln!("Working with {} threads", num_threads);
+
+    // create matrices
+    let mut p = Matrix::new(rows, cols, deps);
+    p.init_matrix();
+    let mut wrk = Matrix::new_from_other(&p);
+
+    // vars
+    let mut gosa = 0.0;
+    let mut thread_work = vec![0; num_threads+1];
+    for i in 0..num_threads {
+        thread_work[i] = 1+i*(p.rows-2)/num_threads;
+    }
+    thread_work[num_threads] = p.rows-1;
+
+    // pointers
+    let mut ptr_p = (&mut p as *mut Matrix) as usize;
+    let mut ptr_wrk = (&mut wrk as *mut Matrix) as usize;
+    let mut ptr_tmp : usize;
+
+    // iterate for the given number of iterations
+    for n in 0..num_iterations {
+
+        let mut threads = Vec::new();
+
+        // calculate full matrix
+        for i in 0..num_threads {
+            let r_begin = thread_work[i];
+            let r_end = thread_work[i+1];
+            threads.push( thread::spawn( move || calculate_partial(ptr_p, ptr_wrk, r_begin, r_end, n == num_iterations-1) ) );
+        }
+        for thread in threads {
+            match thread.join() {
+                Ok( g ) => gosa += g,
+                Err( e ) => eprintln!("Error inside worker thread!")
+            }
+        }
+
+        // swap matrices
+        ptr_tmp = ptr_p;
+        ptr_p = ptr_wrk;
+        ptr_wrk = ptr_tmp;
 
     }
 
@@ -89,3 +142,4 @@ fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f
     return gosa;
 
 }
+

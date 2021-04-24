@@ -1,10 +1,12 @@
 pub struct Matrix {
-    rows : usize,
-    cols : usize,
-    deps : usize,
+    pub rows : usize,
+    pub cols : usize,
+    pub deps : usize,
     data : Vec<f64>
 }
 
+unsafe impl Send for Matrix {}
+unsafe impl Sync for Matrix {}
 
 impl Matrix {
 
