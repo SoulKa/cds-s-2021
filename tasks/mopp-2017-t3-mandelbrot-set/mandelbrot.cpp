@@ -1,10 +1,8 @@
-#include <complex>
 #include <iostream>
 #include <thread>
-#include <mutex>
-#include <atomic>
 
 #include <assert.h>
+#include <math.h>
 
 using namespace std;
 
@@ -24,61 +22,44 @@ typedef unsigned int uint;
 
 
 // GLOBAL VARS
-
-atomic<uint> current_pixel(0);
 uint NUM_CORES;
 
 
 // FUNCTIONS
 
-void work( s_constants_t *constants )
+void work( uint thread_number, s_constants_t *constants )
 {
 
-    const uint MAX_PIXEL = constants->MAX_COL*constants->MAX_ROW;
-    uint step_size = constants->MAX_COL;
+    uint row, col, n;
+    float z_r;
+    float z_i;
+    float tmp;
 
-    uint p, p_begin, p_end, row, col, n;
-    complex<float> z;
+    // iterate over all pixel that this thread has to calculate
+    for (uint p = thread_number*constants->MAX_ROW*constants->MAX_COL/NUM_CORES; p < (thread_number+1)*constants->MAX_ROW*constants->MAX_COL/NUM_CORES; p++) {
 
-    while (true) {
+        // prepare variables for next iteration
+        row = p / constants->MAX_COL;
+        col = p % constants->MAX_COL;
+        z_r = 0.0;
+        z_i = 0.0;
 
-        // get next working set
-        p_begin = (current_pixel += step_size);
-        p_begin -= step_size;
-        p_end = min(p_begin+step_size, MAX_PIXEL);
+        // calculate next pixel
+        for (n=1u; n < constants->MAX_N; n++) {
 
-        // check if done
-        if (p_begin >= MAX_PIXEL) break;
+            // square z
+            tmp = z_r;
+            z_r = z_r*z_r - z_i*z_i;
+            z_i = 2*tmp*z_i;
 
-        for (p = p_begin; p < p_end; p++) {
-
-            //if (p % 1000 == 0) cerr << p << endl;
-
-            // prepare variables for next iteration
-            row = p / constants->MAX_COL;
-            col = p % constants->MAX_COL;
-            z = 0.0f;
-            n = 0u;
-
-            // calculate next pixel
-            while (abs(z) < 2.0f && ++n < constants->MAX_N) {
-                z = z*z + complex<float>(
-                    col * 2.0f / constants->MAX_COL - 1.5f,
-                    row * 2.0f / constants->MAX_ROW - 1.0f
-                );
-            }
-
-            // set pixel
-            constants->IMAGE[row*constants->MAX_COL+col] = (n == constants->MAX_N ? '#' : '.');
+            // add
+            z_r += col * 2.0f / constants->MAX_COL - 1.5f;
+            z_i += row * 2.0f / constants->MAX_ROW - 1.0f;
 
         }
 
-        // adjust stepsize
-        if (p_end + NUM_CORES*4 > MAX_PIXEL) {
-            step_size = 1;
-        } else {
-            step_size = max(uint(constants->MAX_COL / 2.0 * (1.0 - ((double)p_end/MAX_PIXEL))), 1u);
-        }
+        // set pixel
+        constants->IMAGE[row*constants->MAX_COL+col] = sqrt(z_r*z_r + z_i*z_i) < 2.0f ? '#' : '.';
 
     }
 
@@ -113,7 +94,7 @@ int main() {
     // calculate mandelbrot set
     thread *threads = new thread[NUM_CORES];
     for (uint i = 0; i < NUM_CORES; i++) {
-        threads[i] = thread(work, &constants );
+        threads[i] = thread(work, i, &constants );
     }
 
     // wait for them to finish

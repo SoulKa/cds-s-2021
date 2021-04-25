@@ -1,5 +1,4 @@
-
-CXXFLAGS=-O0 -std=c++11 -Wall -pthread
+CXXFLAGS=-O3 -std=c++11 -Wall -pthread
 RM=rm -f
 EXEC=mandelbrot
 
