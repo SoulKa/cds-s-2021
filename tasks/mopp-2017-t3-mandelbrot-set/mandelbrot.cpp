@@ -1,4 +1,5 @@
 #include <thread>
+#include <cstring>
 
 #include <math.h>
 
@@ -25,15 +26,19 @@ int64_t time_calculation;
 
 // FUNCTIONS
 
-void work( uint thread_number, uint rows, uint cols, uint num_iterations, char *img )
+void work( uint thread_number, uint rows, uint cols, uint num_iterations, char **img )
 {
+
+    uint p_begin = thread_number*rows*(cols+1)/NUM_CORES;
+    uint p_end = (thread_number+1)*rows*(cols+1)/NUM_CORES;
 
     uint n, row, col;
     float z_r, z_i, z_r_tmp;
+    auto img_part = new char[p_end-p_begin];
 
     // iterate over all pixel that this thread has to calculate
-    for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
-    //for (uint p = p = thread_number*rows*(cols+1)/NUM_CORES; p < (thread_number+1)*rows*(cols+1)/NUM_CORES; p++) {
+    //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
+    for (uint p = p_begin; p < p_end; p++) {
 
         row = p / (cols+1u);
         col = p % (cols+1u);
@@ -59,14 +64,20 @@ void work( uint thread_number, uint rows, uint cols, uint num_iterations, char *
             }
 
             // set pixel
-            img[row*(cols+1u)+col] = sqrt(z_r*z_r + z_i*z_i) < 2.0f ? '#' : '.';
+            img_part[p-p_begin] = sqrt(z_r*z_r + z_i*z_i) < 2.0f ? '#' : '.';
 
         } else {
-            img[row*(cols+1u)+col] = '\n';
+
+            // insert newline
+            img_part[p-p_begin] = '\n';
+
         }
-        
 
     }
+
+    // copy image part into final image
+    //memcpy(img+p_begin, img_part, p_end-p_begin);
+    *img = img_part;
 
 }
 
@@ -82,14 +93,15 @@ int main() {
 
     // read stdin
     uint rows, cols, max_iterations;
-    scanf("%u", &rows);
-    scanf("%u", &cols);
-    scanf("%u", &max_iterations);
+    (void)! scanf("%u", &rows);
+    (void)! scanf("%u", &cols);
+    (void)! scanf("%u", &max_iterations);
 
     // create image
-    const auto img_size = rows*(cols+1u);
+    /*const auto img_size = rows*(cols+1u);
     char *img = new char[img_size+1u];
-    img[img_size] = '\0';
+    img[img_size] = '\0';*/
+    auto img_ptr_arr = new char *[NUM_CORES];
 
     #ifdef MEASURE_TIMING
     time_preparation = get_timestamp(ts_begin);
@@ -98,20 +110,23 @@ int main() {
 
     // calculate mandelbrot set
     thread *threads = new thread[NUM_CORES];
-    for (uint i = 0u; i < NUM_CORES; i++) threads[i] = thread(work, i, rows, cols, max_iterations, img );
+    for (uint i = 0u; i < NUM_CORES; i++) {
+        threads[i] = thread(work, i, rows, cols, max_iterations, &img_ptr_arr[i] );
+    }
 
     // wait for them to finish
-    for (uint i = 0u; i < NUM_CORES; i++) threads[i].join();
+    for (uint i = 0u; i < NUM_CORES; i++) {
+
+        threads[i].join();
+
+        // print result
+        fwrite(img_ptr_arr[i], 1, (i+1)*rows*(cols+1)/NUM_CORES-i*rows*(cols+1)/NUM_CORES, stdout);
+
+    }
 
     #ifdef MEASURE_TIMING
     time_calculation = get_timestamp(ts_calculation);
     ts_calculation = get_timestamp();
-    #endif
-
-    // print result
-    fwrite(img, 1, img_size, stdout);
-
-    #ifdef MEASURE_TIMING
     time_full = get_timestamp(ts_begin);
 
     fprintf(stderr, "Time full: %.3fms\n", time_full/1.0e6);
