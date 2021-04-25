@@ -1,70 +1,68 @@
-#include <iostream>
 #include <thread>
 
-#include <assert.h>
 #include <math.h>
+
+#ifdef MEASURE_TIMING
+#include "common.h"
+#endif
 
 using namespace std;
 
 // TYPEDEFS
-
-typedef struct {
-    const uint MAX_ROW;
-    const uint MAX_COL;
-    const uint MAX_N;
-    char *IMAGE;
-} s_constants_t;
-
 typedef unsigned int uint;
 
-
-
 // GLOBAL VARS
-uint NUM_CORES;
+unsigned long NUM_CORES;
 
+#ifdef MEASURE_TIMING
+int64_t ts_begin;
+int64_t ts_calculation;
+
+int64_t time_full;
+int64_t time_preparation;
+int64_t time_calculation;
+#endif
 
 // FUNCTIONS
 
-void work( uint thread_number, s_constants_t *constants )
+void work( uint thread_number, uint rows, uint cols, uint num_iterations, char *img )
 {
 
-    uint p = thread_number*constants->MAX_ROW*(constants->MAX_COL+1)/NUM_CORES;
-    uint p_end = (thread_number+1)*constants->MAX_ROW*(constants->MAX_COL+1)/NUM_CORES;
     uint n, row, col;
     float z_r, z_i, z_r_tmp;
 
     // iterate over all pixel that this thread has to calculate
-    for (; p < p_end; p++) {
+    for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
+    //for (uint p = p = thread_number*rows*(cols+1)/NUM_CORES; p < (thread_number+1)*rows*(cols+1)/NUM_CORES; p++) {
 
-        
-        row = p / (constants->MAX_COL+1);
-        col = p % (constants->MAX_COL+1);
+        row = p / (cols+1u);
+        col = p % (cols+1u);
 
-        if (col < constants->MAX_COL ) {
+        if (col < cols) {
 
             // prepare variables for next iteration
-            z_r = 0.0;
-            z_i = 0.0;
+            z_r = 0.0f;
+            z_i = 0.0f;
 
             // calculate next pixel
-            for (n=1u; n < constants->MAX_N; n++) {
+            for (n=0u; n < num_iterations; n++) {
 
                 // square z
                 z_r_tmp = z_r;
                 z_r = z_r*z_r - z_i*z_i;
-                z_i = 2*z_r_tmp*z_i;
+                z_i = 2.0f*z_r_tmp*z_i;
 
                 // add
-                z_r += col * 2.0f / constants->MAX_COL - 1.5f;
-                z_i += row * 2.0f / constants->MAX_ROW - 1.0f;
+                z_r += col * 2.0f / cols - 1.5f;
+                z_i += row * 2.0f / rows - 1.0f;
 
             }
 
             // set pixel
-            constants->IMAGE[row*(constants->MAX_COL+1)+col] = sqrt(z_r*z_r + z_i*z_i) < 2.0f ? '#' : '.';
+            img[row*(cols+1u)+col] = sqrt(z_r*z_r + z_i*z_i) < 2.0f ? '#' : '.';
 
         } else {
-            constants->IMAGE[row*(constants->MAX_COL+1)+col] = '\n';
+            img[row*(cols+1u)+col] = '\n';
         }
         
 
@@ -74,39 +72,54 @@ void work( uint thread_number, s_constants_t *constants )
 
 int main() {
 
+    #ifdef MEASURE_TIMING
+    ts_begin = get_timestamp();
+    #endif
+
     // get amount of cores
-    NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
-    assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
-    cerr << "Working with " << NUM_CORES << " cores" << endl;
+    const auto NUM_CORES_STRING = getenv("MAX_CPUS");
+    NUM_CORES = NUM_CORES_STRING == nullptr ? 1 : stoul(NUM_CORES_STRING);
 
     // read stdin
-    uint max_row, max_col, max_n;
-    cin >> max_row;
-    cin >> max_col;
-    cin >> max_n;
+    uint rows, cols, max_iterations;
+    scanf("%u", &rows);
+    scanf("%u", &cols);
+    scanf("%u", &max_iterations);
 
     // create image
-    const auto img_size = max_row*(max_col+1);
-    char *img = new char[img_size+1];
+    const auto img_size = rows*(cols+1u);
+    char *img = new char[img_size+1u];
     img[img_size] = '\0';
 
-    // CONSTANTS
-    s_constants_t constants = {
-        max_row,
-        max_col,
-        max_n,
-        img
-    };
+    #ifdef MEASURE_TIMING
+    time_preparation = get_timestamp(ts_begin);
+    ts_calculation = get_timestamp();
+    #endif
 
     // calculate mandelbrot set
     thread *threads = new thread[NUM_CORES];
-    for (uint i = 0; i < NUM_CORES; i++) threads[i] = thread(work, i, &constants );
+    for (uint i = 0u; i < NUM_CORES; i++) threads[i] = thread(work, i, rows, cols, max_iterations, img );
 
     // wait for them to finish
-    for (uint i = 0; i < NUM_CORES; i++) threads[i].join();
+    for (uint i = 0u; i < NUM_CORES; i++) threads[i].join();
+
+    #ifdef MEASURE_TIMING
+    time_calculation = get_timestamp(ts_calculation);
+    ts_calculation = get_timestamp();
+    #endif
 
     // print result
     fwrite(img, 1, img_size, stdout);
+
+    #ifdef MEASURE_TIMING
+    time_full = get_timestamp(ts_begin);
+
+    fprintf(stderr, "Time full: %.3fms\n", time_full/1.0e6);
+    fprintf(stderr, "Time preparation: %.3fms (%.2f%%)\n", time_preparation/1.0e6, time_preparation*100.0/time_full);
+    fprintf(stderr, "Time mandelbrot: %.3fms (%.2f%%)\n", time_calculation/1.0e6, time_calculation*100.0/time_full);
+    #endif
+
+    return 0;
 
 }
 

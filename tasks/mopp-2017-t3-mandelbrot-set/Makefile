@@ -7,6 +7,9 @@ all: $(EXEC)
 $(EXEC):
 	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
+timing:
+	$(CXX) $(CXXFLAGS) -D MEASURE_TIMING $(EXEC).cpp -o $(EXEC)
+
 run:
 	cat judge.in | ./$(EXEC) >test.out 2>/dev/null
 
