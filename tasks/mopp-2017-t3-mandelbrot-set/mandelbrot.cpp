@@ -29,12 +29,12 @@ int64_t time_calculation;
 void work( uint thread_number, uint rows, uint cols, uint num_iterations, char **img )
 {
 
-    uint p_begin = thread_number*rows*(cols+1)/NUM_CORES;
-    uint p_end = (thread_number+1)*rows*(cols+1)/NUM_CORES;
+    uint p_begin = thread_number*rows*(cols+1u)/NUM_CORES;
+    uint p_end = (thread_number+1u)*rows*(cols+1u)/NUM_CORES;
 
     uint n, row, col;
     float z_r, z_i, z_r_tmp;
-    auto img_part = new char[p_end-p_begin];
+    auto img_part = new char[p_end-p_begin+16u]+8u; // add 64byte before and after to make sure that no cache miss will happen
 
     // iterate over all pixel that this thread has to calculate
     //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
