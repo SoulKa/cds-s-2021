@@ -86,8 +86,9 @@ int main() {
     cin >> max_n;
 
     // create image
-    char *img = new char[max_row*(max_col+1)+1];
-    img[max_row*(max_col+1)] = '\0';
+    const auto img_size = max_row*(max_col+1);
+    char *img = new char[img_size+1];
+    img[img_size] = '\0';
 
     // CONSTANTS
     s_constants_t constants = {
@@ -105,7 +106,8 @@ int main() {
     for (uint i = 0; i < NUM_CORES; i++) threads[i].join();
 
     // print result
-    printf("%s", img);  
+    fwrite(img, 1, img_size, stdout);
+
 }
 
 
