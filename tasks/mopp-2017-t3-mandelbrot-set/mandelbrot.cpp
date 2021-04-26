@@ -1,5 +1,6 @@
 #include <thread>
 #include <cstring>
+#include <atomic>
 
 #include <math.h>
 
@@ -22,6 +23,8 @@ int64_t ts_calculation;
 int64_t time_full;
 int64_t time_preparation;
 int64_t time_calculation;
+
+int64_t *time_threads;
 #endif
 
 // FUNCTIONS
@@ -29,12 +32,17 @@ int64_t time_calculation;
 void work( uint thread_number, uint rows, uint cols, uint num_iterations, char **img )
 {
 
+    #ifdef MEASURE_TIMING
+    auto ts_begin_thread = get_timestamp();
+    #endif
+
     uint p_begin = thread_number*rows*(cols+1u)/NUM_CORES;
     uint p_end = (thread_number+1u)*rows*(cols+1u)/NUM_CORES;
 
     uint n, row, col;
     float z_r, z_i, z_r_tmp;
-    auto img_part = new char[p_end-p_begin+16u]+8u; // add 64byte before and after to make sure that no cache miss will happen
+    auto img_part = new char[p_end-p_begin+128u]+64u; // add 64byte before and after to make sure that no cache miss will happen
+    //memset(img_part, 0, p_end-p_begin);
 
     // iterate over all pixel that this thread has to calculate
     //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
@@ -79,6 +87,10 @@ void work( uint thread_number, uint rows, uint cols, uint num_iterations, char *
     //memcpy(img+p_begin, img_part, p_end-p_begin);
     *img = img_part;
 
+    #ifdef MEASURE_TIMING
+    time_threads[thread_number] = get_timestamp(ts_begin_thread);
+    #endif
+
 }
 
 int main() {
@@ -106,6 +118,7 @@ int main() {
     #ifdef MEASURE_TIMING
     time_preparation = get_timestamp(ts_begin);
     ts_calculation = get_timestamp();
+    time_threads = new int64_t[NUM_CORES];
     #endif
 
     // calculate mandelbrot set
@@ -132,6 +145,8 @@ int main() {
     fprintf(stderr, "Time full: %.3fms\n", time_full/1.0e6);
     fprintf(stderr, "Time preparation: %.3fms (%.2f%%)\n", time_preparation/1.0e6, time_preparation*100.0/time_full);
     fprintf(stderr, "Time mandelbrot: %.3fms (%.2f%%)\n", time_calculation/1.0e6, time_calculation*100.0/time_full);
+
+    for (uint i = 0u; i < NUM_CORES; i++) fprintf(stderr, "Time thread %u: %.3fms\n", i, time_threads[i]/1.0e6);
     #endif
 
     return 0;
