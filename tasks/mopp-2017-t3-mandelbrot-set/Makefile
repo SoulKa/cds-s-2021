@@ -1,4 +1,4 @@
-CFLAGS=-Ofast -Wall -std=c99
+CFLAGS=-O3 -Wall -std=c99
 CLIBS=-lm -pthread
 CC=gcc
 RM=rm -f

@@ -1,8 +1,11 @@
+#define _GNU_SOURCE
+
 #include <pthread.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <sched.h>
 
 #ifdef MEASURE_TIMING
 #include "common.h"
@@ -56,7 +59,18 @@ void *work( void *params_uncasted )
     clock_t ts_begin_thread = get_timestamp();
     #endif
 
+    // cast to function parameters and variables
     mandelbrot_params_t* params = (mandelbrot_params_t*) params_uncasted;
+
+    // set CPU affinity
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(params->thread_number, &cpuset);
+    if (pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset) != 0) {
+        fprintf(stderr, "Could not set CPU affinity for thread %u (handle %lu)!\n", params->thread_number, pthread_self());
+    } else {
+        fprintf(stderr, "Running thread %u on CPU %d\n", params->thread_number, sched_getcpu());
+    }
 
     params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/NUM_CORES;
     params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/NUM_CORES;
