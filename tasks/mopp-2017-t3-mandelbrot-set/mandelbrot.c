@@ -1,19 +1,18 @@
 #include <pthread.h>
 #include <math.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 
 #ifdef MEASURE_TIMING
 #include "common.h"
 #endif
 
-using namespace std;
-
 // TYPEDEFS
 typedef unsigned int uint;
 typedef unsigned char byte;
 
-struct mandelbrot_params_t {
+typedef struct {
     byte padding_front[64];
     uint thread_number;
     uint rows;
@@ -30,7 +29,7 @@ struct mandelbrot_params_t {
     float _z_i;
     float _z_r_tmp;
     byte padding_back[64];
-};
+} mandelbrot_params_t;
 
 // GLOBAL VARS
 unsigned long NUM_CORES;
@@ -54,15 +53,15 @@ void *work( void *params_uncasted )
 {
 
     #ifdef MEASURE_TIMING
-    auto ts_begin_thread = get_timestamp();
+    clock_t ts_begin_thread = get_timestamp();
     #endif
 
-    auto params = (mandelbrot_params_t*) params_uncasted;
+    mandelbrot_params_t* params = (mandelbrot_params_t*) params_uncasted;
 
     params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/NUM_CORES;
     params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/NUM_CORES;
 
-    params->img_part = new char[params->_p_end-params->_p_begin+128u]+64u; // add 64byte before and after to make sure that no cache miss will happen
+    params->img_part = malloc((params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]))+64u; // add 64byte before and after to make sure that no cache miss will happen
     //memset(img_part, 0, p_end-p_begin);
 
     // iterate over all pixel that this thread has to calculate
@@ -93,7 +92,7 @@ void *work( void *params_uncasted )
             }
 
             // set pixel
-            params->img_part[params->_p-params->_p_begin] = sqrt(params->_z_r*params->_z_r + params->_z_i*params->_z_i) < 2.0f ? '#' : '.';
+            params->img_part[params->_p-params->_p_begin] = sqrtf(params->_z_r*params->_z_r + params->_z_i*params->_z_i) < 2.0f ? '#' : '.';
 
         } else {
 
@@ -105,7 +104,7 @@ void *work( void *params_uncasted )
     }
 
     #ifdef MEASURE_TIMING
-    time_threads[params->thread_number] = get_timestamp(ts_begin_thread);
+    time_threads[params->thread_number] = get_timediff(ts_begin_thread);
     #endif
 
     return NULL;
@@ -119,8 +118,8 @@ int main() {
     #endif
 
     // get amount of cores
-    const auto NUM_CORES_STRING = getenv("MAX_CPUS");
-    NUM_CORES = NUM_CORES_STRING == nullptr ? 1 : strtoul(NUM_CORES_STRING, NULL, 10);
+    const char *NUM_CORES_STRING = getenv("MAX_CPUS");
+    NUM_CORES = NUM_CORES_STRING == NULL ? 1 : strtoul(NUM_CORES_STRING, NULL, 10);
     fprintf(stderr, "Working with %lu threads\n", NUM_CORES);
 
     // read stdin
@@ -130,14 +129,14 @@ int main() {
     (void)! scanf("%u", &max_iterations);
 
     #ifdef MEASURE_TIMING
-    time_preparation = get_timestamp(ts_begin);
+    time_preparation = get_timediff(ts_begin);
     ts_calculation = get_timestamp();
-    time_threads = new clock_t[NUM_CORES];
+    time_threads = malloc(NUM_CORES * sizeof(clock_t));
     #endif
 
     // calculate mandelbrot set
-    auto *threads = new pthread_t[NUM_CORES];
-    auto params_arr = new mandelbrot_params_t[NUM_CORES];
+    pthread_t *threads = malloc(NUM_CORES * sizeof(pthread_t));
+    mandelbrot_params_t *params_arr = malloc(NUM_CORES * sizeof(mandelbrot_params_t));
     for (uint i = 0u; i < NUM_CORES; i++) {
 
         params_arr[i].thread_number = i;
@@ -159,9 +158,9 @@ int main() {
     }
 
     #ifdef MEASURE_TIMING
-    time_calculation = get_timestamp(ts_calculation);
+    time_calculation = get_timediff(ts_calculation);
     ts_calculation = get_timestamp();
-    time_full = get_timestamp(ts_begin);
+    time_full = get_timediff(ts_begin);
 
     fprintf(stderr, "Time full: %.3fms\n", time_full/1.0e4);
     fprintf(stderr, "Time preparation: %.3fms (%.2f%%)\n", time_preparation/1.0e4, time_preparation*100.0/time_full);

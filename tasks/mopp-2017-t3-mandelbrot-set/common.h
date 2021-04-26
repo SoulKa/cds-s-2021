@@ -1,16 +1,16 @@
 #ifndef __HEADER_COMMON__
 #define __HEADER_COMMON__
 
-#include <chrono>
+#include <time.h>
 
 typedef unsigned int uint;
 
-int64_t get_timestamp() {
-    return std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count();
+clock_t get_timestamp() {
+    return clock();
 }
 
-int64_t get_timestamp( int64_t ts ) {
-    return std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now()).time_since_epoch().count() - ts;
+clock_t get_timediff( clock_t ts ) {
+    return clock() - ts;
 }
 
 #endif
