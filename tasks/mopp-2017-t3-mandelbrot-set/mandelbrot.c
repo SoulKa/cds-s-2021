@@ -20,6 +20,8 @@ typedef struct {
     uint thread_number;
     uint rows;
     uint cols;
+    float rows_f;
+    float cols_f;
     uint num_iterations;
     char *img_part;
     uint _p_begin;
@@ -28,6 +30,8 @@ typedef struct {
     uint _n;
     uint _row;
     uint _col;
+    float _i_iterator;
+    float _r_iterator;
     float _z_r;
     float _z_i;
     float _z_r_tmp;
@@ -74,6 +78,8 @@ void *work( void *params_uncasted )
 
     params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/NUM_CORES;
     params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/NUM_CORES;
+    params->_row = params->_p_begin / (params->cols+1u);
+    params->_col = params->_p_begin % (params->cols+1u);
 
     params->img_part = malloc((params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]))+64u; // add 64byte before and after to make sure that no cache miss will happen
     //memset(img_part, 0, p_end-p_begin);
@@ -82,36 +88,38 @@ void *work( void *params_uncasted )
     //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
     for (params->_p = params->_p_begin; params->_p < params->_p_end; params->_p++) {
 
-        params->_row = params->_p / (params->cols+1u);
-        params->_col = params->_p % (params->cols+1u);
-
         if (params->_col < params->cols) {
 
             // prepare variables for next iteration
             params->_z_r = 0.0f;
             params->_z_i = 0.0f;
+            params->_r_iterator = params->_col * 2.0f / params->cols_f - 1.5f;
+            params->_i_iterator = params->_row * 2.0f / params->rows_f - 1.0f;
 
             // calculate next pixel
             for (params->_n=0u; params->_n < params->num_iterations; params->_n++) {
 
                 // square z
-                params->_z_r_tmp = params->_z_r;
+                params->_z_r_tmp = 2.0f*params->_z_r;
                 params->_z_r = params->_z_r*params->_z_r - params->_z_i*params->_z_i;
-                params->_z_i = 2.0f*params->_z_r_tmp*params->_z_i;
+                params->_z_i *= params->_z_r_tmp;
 
                 // add
-                params->_z_r += params->_col * 2.0f / params->cols - 1.5f;
-                params->_z_i += params->_row * 2.0f / params->rows - 1.0f;
+                params->_z_r += params->_r_iterator;
+                params->_z_i += params->_i_iterator;
 
             }
 
             // set pixel
             params->img_part[params->_p-params->_p_begin] = sqrtf(params->_z_r*params->_z_r + params->_z_i*params->_z_i) < 2.0f ? '#' : '.';
+            params->_col++;
 
         } else {
 
             // insert newline
             params->img_part[params->_p-params->_p_begin] = '\n';
+            params->_col = 0u;
+            params->_row++;
 
         }
 
@@ -156,6 +164,8 @@ int main() {
         params_arr[i].thread_number = i;
         params_arr[i].rows = rows;
         params_arr[i].cols = cols;
+        params_arr[i].rows_f = rows;
+        params_arr[i].cols_f = cols;
         params_arr[i].num_iterations = max_iterations;
         pthread_create(&threads[i], NULL, work, &params_arr[i]);
 
