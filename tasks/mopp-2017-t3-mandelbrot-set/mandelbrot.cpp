@@ -13,6 +13,25 @@ using namespace std;
 // TYPEDEFS
 typedef unsigned int uint;
 
+typedef struct mandelbrot_params_t {
+    uint8_t padding_front[64];
+    uint thread_number;
+    uint rows;
+    uint cols;
+    uint num_iterations;
+    char *img_part;
+    uint _p_begin;
+    uint _p_end;
+    uint _p;
+    uint _n;
+    uint _row;
+    uint _col;
+    float _z_r;
+    float _z_i;
+    float _z_r_tmp;
+    uint8_t padding_back[64];
+};
+
 // GLOBAL VARS
 unsigned long NUM_CORES;
 
@@ -29,66 +48,60 @@ int64_t *time_threads;
 
 // FUNCTIONS
 
-void work( uint thread_number, uint rows, uint cols, uint num_iterations, char **img )
+void work( mandelbrot_params_t *params )
 {
 
     #ifdef MEASURE_TIMING
     auto ts_begin_thread = get_timestamp();
     #endif
 
-    uint p_begin = thread_number*rows*(cols+1u)/NUM_CORES;
-    uint p_end = (thread_number+1u)*rows*(cols+1u)/NUM_CORES;
+    params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/NUM_CORES;
+    params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/NUM_CORES;
 
-    uint n, row, col;
-    float z_r, z_i, z_r_tmp;
-    auto img_part = new char[p_end-p_begin+128u]+64u; // add 64byte before and after to make sure that no cache miss will happen
+    params->img_part = new char[params->_p_end-params->_p_begin+128u]+64u; // add 64byte before and after to make sure that no cache miss will happen
     //memset(img_part, 0, p_end-p_begin);
 
     // iterate over all pixel that this thread has to calculate
     //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
-    for (uint p = p_begin; p < p_end; p++) {
+    for (params->_p = params->_p_begin; params->_p < params->_p_end; params->_p++) {
 
-        row = p / (cols+1u);
-        col = p % (cols+1u);
+        params->_row = params->_p / (params->cols+1u);
+        params->_col = params->_p % (params->cols+1u);
 
-        if (col < cols) {
+        if (params->_col < params->cols) {
 
             // prepare variables for next iteration
-            z_r = 0.0f;
-            z_i = 0.0f;
+            params->_z_r = 0.0f;
+            params->_z_i = 0.0f;
 
             // calculate next pixel
-            for (n=0u; n < num_iterations; n++) {
+            for (params->_n=0u; params->_n < params->num_iterations; params->_n++) {
 
                 // square z
-                z_r_tmp = z_r;
-                z_r = z_r*z_r - z_i*z_i;
-                z_i = 2.0f*z_r_tmp*z_i;
+                params->_z_r_tmp = params->_z_r;
+                params->_z_r = params->_z_r*params->_z_r - params->_z_i*params->_z_i;
+                params->_z_i = 2.0f*params->_z_r_tmp*params->_z_i;
 
                 // add
-                z_r += col * 2.0f / cols - 1.5f;
-                z_i += row * 2.0f / rows - 1.0f;
+                params->_z_r += params->_col * 2.0f / params->cols - 1.5f;
+                params->_z_i += params->_row * 2.0f / params->rows - 1.0f;
 
             }
 
             // set pixel
-            img_part[p-p_begin] = sqrt(z_r*z_r + z_i*z_i) < 2.0f ? '#' : '.';
+            params->img_part[params->_p-params->_p_begin] = sqrt(params->_z_r*params->_z_r + params->_z_i*params->_z_i) < 2.0f ? '#' : '.';
 
         } else {
 
             // insert newline
-            img_part[p-p_begin] = '\n';
+            params->img_part[params->_p-params->_p_begin] = '\n';
 
         }
 
     }
 
-    // copy image part into final image
-    //memcpy(img+p_begin, img_part, p_end-p_begin);
-    *img = img_part;
-
     #ifdef MEASURE_TIMING
-    time_threads[thread_number] = get_timestamp(ts_begin_thread);
+    time_threads[params->thread_number] = get_timestamp(ts_begin_thread);
     #endif
 
 }
@@ -109,12 +122,6 @@ int main() {
     (void)! scanf("%u", &cols);
     (void)! scanf("%u", &max_iterations);
 
-    // create image
-    /*const auto img_size = rows*(cols+1u);
-    char *img = new char[img_size+1u];
-    img[img_size] = '\0';*/
-    auto img_ptr_arr = new char *[NUM_CORES];
-
     #ifdef MEASURE_TIMING
     time_preparation = get_timestamp(ts_begin);
     ts_calculation = get_timestamp();
@@ -123,8 +130,15 @@ int main() {
 
     // calculate mandelbrot set
     thread *threads = new thread[NUM_CORES];
+    auto params_arr = new mandelbrot_params_t[NUM_CORES];
     for (uint i = 0u; i < NUM_CORES; i++) {
-        threads[i] = thread(work, i, rows, cols, max_iterations, &img_ptr_arr[i] );
+
+        params_arr[i].thread_number = i;
+        params_arr[i].rows = rows;
+        params_arr[i].cols = cols;
+        params_arr[i].num_iterations = max_iterations;
+        threads[i] = thread(work, &params_arr[i]);
+
     }
 
     // wait for them to finish
@@ -133,7 +147,7 @@ int main() {
         threads[i].join();
 
         // print result
-        fwrite(img_ptr_arr[i], 1, (i+1)*rows*(cols+1)/NUM_CORES-i*rows*(cols+1)/NUM_CORES, stdout);
+        fwrite(params_arr[i].img_part, 1, (i+1)*rows*(cols+1)/NUM_CORES-i*rows*(cols+1)/NUM_CORES, stdout);
 
     }
 
