@@ -15,6 +15,9 @@ timing:
 run:
 	cat judge.in | ./$(EXEC) >test.out 2>/dev/null
 
+fork:
+	$(CC) $(CFLAGS) $(EXEC)_fork.c -o $(EXEC) -lm
+
 profile:
 	$(CC) $(CFLAGS) -pg $(EXEC).c -o $(EXEC) $(CLIBS)
 
