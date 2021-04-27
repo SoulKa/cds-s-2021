@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <time.h>
 #include <sched.h>
+#include <string.h>
 
 #ifdef MEASURE_TIMING
 #include "common.h"
@@ -23,6 +24,7 @@ typedef struct {
     float rows_f;
     float cols_f;
     uint num_iterations;
+    u_char num_cores;
     char *img_part;
     uint _p_begin;
     uint _p_end;
@@ -39,9 +41,6 @@ typedef struct {
 } mandelbrot_params_t;
 
 // GLOBAL VARS
-unsigned long NUM_CORES;
-
-pthread_mutex_t current_row_mutex;
 
 #ifdef MEASURE_TIMING
 clock_t ts_begin;
@@ -76,13 +75,13 @@ void *work( void *params_uncasted )
         fprintf(stderr, "Running thread %u on CPU %d\n", params->thread_number, sched_getcpu());
     }
 
-    params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/NUM_CORES;
-    params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/NUM_CORES;
+    params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/params->num_cores;
+    params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/params->num_cores;
     params->_row = params->_p_begin / (params->cols+1u);
     params->_col = params->_p_begin % (params->cols+1u);
 
-    params->img_part = malloc((params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]))+64u; // add 64byte before and after to make sure that no cache miss will happen
-    //memset(img_part, 0, p_end-p_begin);
+    params->img_part = malloc((params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]))+64lu; // add 64byte before and after to make sure that no cache miss will happen
+    //memset(params->img_part-64lu, 0, (params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]));
 
     // iterate over all pixel that this thread has to calculate
     //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
@@ -99,14 +98,10 @@ void *work( void *params_uncasted )
             // calculate next pixel
             for (params->_n=0u; params->_n < params->num_iterations; params->_n++) {
 
-                // square z
+                // square z and add offset
                 params->_z_r_tmp = 2.0f*params->_z_r;
-                params->_z_r = params->_z_r*params->_z_r - params->_z_i*params->_z_i;
-                params->_z_i *= params->_z_r_tmp;
-
-                // add
-                params->_z_r += params->_r_iterator;
-                params->_z_i += params->_i_iterator;
+                params->_z_r = params->_z_r*params->_z_r - params->_z_i*params->_z_i + params->_r_iterator;
+                params->_z_i = params->_z_i * params->_z_r_tmp + params->_i_iterator;
 
             }
 
@@ -141,8 +136,8 @@ int main() {
 
     // get amount of cores
     const char *NUM_CORES_STRING = getenv("MAX_CPUS");
-    NUM_CORES = NUM_CORES_STRING == NULL ? 1 : strtoul(NUM_CORES_STRING, NULL, 10);
-    fprintf(stderr, "Working with %lu threads\n", NUM_CORES);
+    ushort NUM_CORES = NUM_CORES_STRING == NULL ? 1 : strtoul(NUM_CORES_STRING, NULL, 10);
+    fprintf(stderr, "Working with %u threads\n", NUM_CORES);
 
     // read stdin
     uint rows, cols, max_iterations;
@@ -159,7 +154,8 @@ int main() {
     // calculate mandelbrot set
     pthread_t *threads = malloc(NUM_CORES * sizeof(pthread_t));
     mandelbrot_params_t *params_arr = malloc(NUM_CORES * sizeof(mandelbrot_params_t));
-    for (uint i = 0u; i < NUM_CORES; i++) {
+    uint i;
+    for (i = 0u; i < NUM_CORES; i++) {
 
         params_arr[i].thread_number = i;
         params_arr[i].rows = rows;
@@ -167,14 +163,19 @@ int main() {
         params_arr[i].rows_f = rows;
         params_arr[i].cols_f = cols;
         params_arr[i].num_iterations = max_iterations;
-        pthread_create(&threads[i], NULL, work, &params_arr[i]);
+        params_arr[i].num_cores = NUM_CORES;
+        
+        if (i == NUM_CORES-1)
+            work(&params_arr[i]);
+        else
+            pthread_create(&threads[i], NULL, work, &params_arr[i]);
 
     }
 
     // wait for them to finish
-    for (uint i = 0u; i < NUM_CORES; i++) {
+    for (i = 0u; i < NUM_CORES; i++) {
 
-        pthread_join(threads[i], NULL);
+        if (i != NUM_CORES-1) pthread_join(threads[i], NULL);
 
         // print result
         fwrite(params_arr[i].img_part, 1, (i+1)*rows*(cols+1)/NUM_CORES-i*rows*(cols+1)/NUM_CORES, stdout);
