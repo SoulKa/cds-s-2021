@@ -17,6 +17,11 @@ typedef unsigned int uint;
 typedef unsigned char byte;
 
 typedef struct {
+    uint value;
+    pthread_mutex_t mutex;
+} atomic_uint_t;
+
+typedef struct {
     byte padding_front[64];
     uint thread_number;
     uint rows;
@@ -25,7 +30,8 @@ typedef struct {
     float cols_f;
     uint num_iterations;
     u_char num_cores;
-    char *img_part;
+    atomic_uint_t *next_pixel;
+    char *img;
     uint _p_begin;
     uint _p_end;
     uint _p;
@@ -63,65 +69,73 @@ void *work( void *params_uncasted )
     #endif
 
     // cast to function parameters and variables
-    mandelbrot_params_t* params = (mandelbrot_params_t*) params_uncasted;
+    mandelbrot_params_t* p = (mandelbrot_params_t*) params_uncasted;
 
     // set CPU affinity
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
-    CPU_SET(params->thread_number, &cpuset);
+    CPU_SET(p->thread_number, &cpuset);
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpuset), &cpuset) != 0) {
-        fprintf(stderr, "Could not set CPU affinity for thread %u (handle %lu)!\n", params->thread_number, pthread_self());
+        fprintf(stderr, "Could not set CPU affinity for thread %u (handle %lu)!\n", p->thread_number, pthread_self());
     } else {
-        fprintf(stderr, "Running thread %u on CPU %d\n", params->thread_number, sched_getcpu());
+        fprintf(stderr, "Running thread %u on CPU %d\n", p->thread_number, sched_getcpu());
     }
 
-    params->_p_begin = params->thread_number*params->rows*(params->cols+1u)/params->num_cores;
-    params->_p_end = (params->thread_number+1u)*params->rows*(params->cols+1u)/params->num_cores;
-    params->_row = params->_p_begin / (params->cols+1u);
-    params->_col = params->_p_begin % (params->cols+1u);
+    p->_p_begin = p->thread_number*p->rows*(p->cols+1u)/(p->num_cores*2u);
+    p->_p_end = (p->thread_number+1u)*p->rows*(p->cols+1u)/(p->num_cores*2u);
+    
+    do {
 
-    params->img_part = malloc((params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]))+64lu; // add 64byte before and after to make sure that no cache miss will happen
-    //memset(params->img_part-64lu, 0, (params->_p_end - params->_p_begin + 128u) * sizeof(params->img_part[0]));
+        p->_row = p->_p_begin / (p->cols+1u);
+        p->_col = p->_p_begin % (p->cols+1u);
 
-    // iterate over all pixel that this thread has to calculate
-    //for (uint p = thread_number; p < rows*(cols+1u); p += NUM_CORES) {
-    for (params->_p = params->_p_begin; params->_p < params->_p_end; params->_p++) {
+        // iterate over all pixel that this thread has to calculate
+        for (p->_p = p->_p_begin; p->_p < p->_p_end; p->_p++) {
 
-        if (params->_col < params->cols) {
+            if (p->_col < p->cols) {
 
-            // prepare variables for next iteration
-            params->_z_r = 0.0f;
-            params->_z_i = 0.0f;
-            params->_r_iterator = params->_col * 2.0f / params->cols_f - 1.5f;
-            params->_i_iterator = params->_row * 2.0f / params->rows_f - 1.0f;
+                // prepare variables for next iteration
+                p->_z_r = 0.0f;
+                p->_z_i = 0.0f;
+                p->_r_iterator = p->_col * 2.0f / p->cols_f - 1.5f;
+                p->_i_iterator = p->_row * 2.0f / p->rows_f - 1.0f;
 
-            // calculate next pixel
-            for (params->_n=0u; params->_n < params->num_iterations; params->_n++) {
+                // calculate next pixel
+                for (p->_n=0u; p->_n < p->num_iterations; p->_n++) {
 
-                // square z and add offset
-                params->_z_r_tmp = 2.0f*params->_z_r;
-                params->_z_r = params->_z_r*params->_z_r - params->_z_i*params->_z_i + params->_r_iterator;
-                params->_z_i = params->_z_i * params->_z_r_tmp + params->_i_iterator;
+                    // square z and add offset
+                    p->_z_r_tmp = 2.0f*p->_z_r;
+                    p->_z_r = p->_z_r*p->_z_r - p->_z_i*p->_z_i + p->_r_iterator;
+                    p->_z_i = p->_z_i * p->_z_r_tmp + p->_i_iterator;
+
+                }
+
+                // set pixel
+                p->img[p->_p] = sqrtf(p->_z_r*p->_z_r + p->_z_i*p->_z_i) < 2.0f ? '#' : '.';
+                p->_col++;
+
+            } else {
+
+                // insert newline
+                p->img[p->_p] = '\n';
+                p->_col = 0u;
+                p->_row++;
 
             }
 
-            // set pixel
-            params->img_part[params->_p-params->_p_begin] = sqrtf(params->_z_r*params->_z_r + params->_z_i*params->_z_i) < 2.0f ? '#' : '.';
-            params->_col++;
-
-        } else {
-
-            // insert newline
-            params->img_part[params->_p-params->_p_begin] = '\n';
-            params->_col = 0u;
-            params->_row++;
-
         }
 
-    }
+        // get more work
+        pthread_mutex_lock(&p->next_pixel->mutex);
+        p->_p_end = (p->next_pixel->value += 10u);
+        pthread_mutex_unlock(&p->next_pixel->mutex);
+        p->_p_begin = p->_p_end - 10u;
+        if (p->_p_end > p->rows*(p->cols+1u)) p->_p_end = p->rows*(p->cols+1u);
+
+    } while(p->_p_begin < p->_p_end);
 
     #ifdef MEASURE_TIMING
-    time_threads[params->thread_number] = get_timediff(ts_begin_thread);
+    time_threads[p->thread_number] = get_timediff(ts_begin_thread);
     #endif
 
     return NULL;
@@ -144,6 +158,9 @@ int main() {
     (void)! scanf("%u", &rows);
     (void)! scanf("%u", &cols);
     (void)! scanf("%u", &max_iterations);
+    char *img = malloc(rows*(cols+1) + 128lu) + 64lu;
+    atomic_uint_t worker_pixel = { 0u };
+    pthread_mutex_init(&worker_pixel.mutex, 0);
 
     #ifdef MEASURE_TIMING
     time_preparation = get_timediff(ts_begin);
@@ -164,6 +181,8 @@ int main() {
         params_arr[i].cols_f = cols;
         params_arr[i].num_iterations = max_iterations;
         params_arr[i].num_cores = NUM_CORES;
+        params_arr[i].img = img;
+        params_arr[i].next_pixel = &worker_pixel;
         
         if (i == NUM_CORES-1)
             work(&params_arr[i]);
@@ -173,14 +192,10 @@ int main() {
     }
 
     // wait for them to finish
-    for (i = 0u; i < NUM_CORES; i++) {
+    for (i = 0u; i < NUM_CORES; i++) if (i != NUM_CORES-1) pthread_join(threads[i], NULL);
 
-        if (i != NUM_CORES-1) pthread_join(threads[i], NULL);
-
-        // print result
-        fwrite(params_arr[i].img_part, 1, (i+1)*rows*(cols+1)/NUM_CORES-i*rows*(cols+1)/NUM_CORES, stdout);
-
-    }
+    // print result
+    fwrite(img, 1, rows*(cols+1), stdout);
 
     #ifdef MEASURE_TIMING
     time_calculation = get_timediff(ts_calculation);
