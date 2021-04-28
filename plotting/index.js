@@ -40,9 +40,8 @@ function getParallelCodeBySpeedup( speedup, numCores ) {
  * when the given speedup was achieved
  */
 function amdahlsLaw( parallelCodePart, numCores ) {
-    const p = parallelCodePart, n = numCores;
-    if (p <= 1.0) return 1 / ( 1.0 + (p/n) );
-    return (1 - (1.0-p)) / ( (1.0-Math.min(p, 1.0)) + (p/n) );
+    const p = Math.min(parallelCodePart, 1.0), n = numCores;
+    return 1 / ( 1.0 + (p/n) );
 }
 
 /**
