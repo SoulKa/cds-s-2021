@@ -16,8 +16,8 @@ if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR);
 const LOG_FILENAMES = fs.readdirSync(LOG_DIR, { withFileTypes: true }).filter( f => f.isFile() && f.name.endsWith(".txt") ).map( f => f.name.slice(0, -4) );
 
 /** @type {number[]} Contains the numbers 2^x for x = 0..16 */
-const AMDAHLS_LAW_X = [];
-for (let i=0;i<=16;i++) AMDAHLS_LAW_X.push(Math.pow(2, i));
+const AMDAHLS_LAW_X = [1, 2, 4, 8, 14, 16, 24, 28, 32, 48, 56];
+//for (let i=0;i<=16;i++) AMDAHLS_LAW_X.push(Math.pow(2, i));
 
 /**
  * Calculates the parallelized code part of the measured program
@@ -41,7 +41,8 @@ function getParallelCodeBySpeedup( speedup, numCores ) {
  */
 function amdahlsLaw( parallelCodePart, numCores ) {
     const p = parallelCodePart, n = numCores;
-    return 1 / ( (1-p) + (p/n) );
+    if (p <= 1.0) return 1 / ( 1.0 + (p/n) );
+    return (1 - (1.0-p)) / ( (1.0-Math.min(p, 1.0)) + (p/n) );
 }
 
 /**
@@ -117,7 +118,7 @@ async function main() {
         }
 
         // create scaling plot
-        await createPlot(
+        if (!fs.existsSync(scalingPlotFilepath)) await createPlot(
             {
                 data: [{
                     x,
@@ -147,7 +148,7 @@ async function main() {
         );
 
         // create amdahl's law plot
-        await createPlot(
+        if (!fs.existsSync(parallelCodePlotFilepath)) await createPlot(
             {
                 data: [
                     {
@@ -160,7 +161,7 @@ async function main() {
                         marker: {
                             size: 0
                         },
-                        name: `Amdahl's Law; p=${(p28*100).toFixed(2)}%`
+                        name: `Amdahl's Law; p=${(p28,100).toFixed(2)}%`
                     },
                     {
                         x: AMDAHLS_LAW_X,
@@ -173,7 +174,7 @@ async function main() {
                         marker: {
                             size: 0
                         },
-                        name: `Amdahl's Law; p=${(p56*100).toFixed(2)}%`
+                        name: `Amdahl's Law; p=${(p56, 100).toFixed(2)}%`
                     },
                     {
                         x,
