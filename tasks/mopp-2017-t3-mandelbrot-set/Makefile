@@ -1,25 +1,20 @@
-CFLAGS=-O3 -Wall -std=c99
-CLIBS=-lm -pthread
-CC=gcc
+CXXFLAGS=-O3 -std=c++11 -Wall -pthread
 RM=rm -f
 EXEC=mandelbrot
 
 all: $(EXEC)
 
 $(EXEC):
-	$(CC) $(CFLAGS) $(EXEC).c -o $(EXEC) $(CLIBS)
-
-timing:
-	$(CC) $(CFLAGS) -D MEASURE_TIMING $(EXEC).c -o $(EXEC) $(CLIBS)
+	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
 run:
-	cat judge.in | ./$(EXEC) >test.out 2>/dev/null
-
-fork:
-	$(CC) $(CFLAGS) $(EXEC)_fork.c -o $(EXEC) -lm
+	cat $(EXEC).in | ./$(EXEC) 
 
 profile:
-	$(CC) $(CFLAGS) -pg $(EXEC).c -o $(EXEC) $(CLIBS)
+	$(CXX) $(CXXFLAGS) -pg $(EXEC).cpp -o $(EXEC)
+
+timing:
+	$(CXX) $(CXXFLAGS) -D MEASURE_TIME $(EXEC).cpp -o $(EXEC)
 
 clean:
-	$(RM) $(EXEC).o $(EXEC)
+	$(RM) $(EXEC)
