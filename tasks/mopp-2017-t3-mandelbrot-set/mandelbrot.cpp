@@ -97,7 +97,7 @@ void *work( void *params_uncasted )
         v.n = 0u;
         v.r = v.p / g.cols;
         v.c = v.p % g.cols;
-        fprintf(stderr, "Working on pixel %u (%u, %u)\n", v.p, v.r, v.c);
+        //fprintf(stderr, "Working on pixel %u (%u, %u)\n", v.p, v.r, v.c);
         
         // calculate pixel
         while (abs(v.z) < 2.0 && ++v.n < g.num_iterations) {
@@ -111,7 +111,7 @@ void *work( void *params_uncasted )
         while (p->output.pixel_number != UINT32_MAX) usleep(1);
         p->output.pixel_value = (v.n == g.num_iterations) ? '#' : '.';
         p->output.pixel_number = v.p;
-        fprintf(stderr, "Finished pixel %u\n", v.p);
+        //fprintf(stderr, "Finished pixel %u\n", v.p);
 
     }
 
@@ -140,7 +140,7 @@ void *collect_output( void *thread_params_uncasted )
 
                 // read pixel result from worker
                 g.img[params_arr[i].output.pixel_number] = params_arr[i].output.pixel_value;
-                fprintf(stderr, "Received pixel: %u\n", params_arr[i].output.pixel_number);
+                //fprintf(stderr, "Received pixel: %u\n", params_arr[i].output.pixel_number);
                 params_arr[i].output.pixel_number = UINT32_MAX;
                 
                 pixels_processed++;
@@ -201,7 +201,7 @@ int main() {
 
             // provide new input for worker
             if (params_arr[i].input == UINT32_MAX) {
-                fprintf(stderr, "Next pixel: %u\n", p);
+                //fprintf(stderr, "Next pixel: %u\n", p);
                 params_arr[i].input = p++;
             }
 
