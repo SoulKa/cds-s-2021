@@ -1,9 +1,6 @@
-#include <complex>
 #include <atomic>
-#include <queue>
 #include <chrono>
 #include <thread>
-#include <vector>
 #include <atomic>
 
 #include <pthread.h>
@@ -50,8 +47,14 @@ struct alignas(CACHELINE_SIZE) mandelbrot_vars_t {
     uint32_t r;
     uint32_t c;
     uint32_t n;
-    std::complex<float> z;
-    uint8_t padding[CACHELINE_SIZE-4*sizeof(uint32_t)-sizeof(std::complex<float>)];
+    float z_r;
+    float z_i;
+    float z_r_sqr;
+    float z_i_sqr;
+    float c_r;
+    float c_i;
+    float tmp;
+    uint8_t padding[CACHELINE_SIZE-2*sizeof(uint8_t)-4*sizeof(uint32_t)-7*sizeof(float)];
 };
 
 
@@ -99,17 +102,23 @@ void *work( void *params_uncasted )
         v.input_queue_begin = (v.input_queue_begin + 1) % INPUT_BUFFER_SIZE;
 
         // prepare vars
-        v.z = 0;
         v.n = 0u;
         v.r = v.p / g.cols;
         v.c = v.p % g.cols;
+
+        v.z_r = 0.0f;
+        v.z_i = 0.0f;
+        v.c_r = v.c * 2.0f / g.cols - 1.5f;
+        v.c_i = v.r * 2.0f / g.rows - 1.0f;
+        
+
         //fprintf(stderr, "Working on pixel %u (%u, %u)\n", v.p, v.r, v.c);
         
         // calculate pixel
-        while (abs(v.z) < 2.0f && ++v.n < g.num_iterations) {
-            v.z = v.z*v.z;
-            v.z.real( v.z.real() + ((float)v.c * 2.0f / g.cols - 1.5f) );
-            v.z.imag( v.z.imag() + ((float)v.r * 2.0f / g.rows - 1.0f) );
+        while (( (v.z_r_sqr = (v.z_r*v.z_r)) + (v.z_i_sqr = (v.z_i*v.z_i)) ) < 4.0f && ++v.n < g.num_iterations) {
+            v.tmp = v.z_r;
+            v.z_r = v.z_r_sqr - v.z_i_sqr + v.c_r;
+            v.z_i = v.z_i * 2.0f * v.tmp  + v.c_i;
         }
         
         // set pixel
@@ -132,7 +141,7 @@ void *collect_output( void *thread_params_uncasted )
 {
 
     // last CPU
-    //set_on_cpu(g.num_threads-1);
+    set_on_cpu(g.num_threads-1);
 
     auto params_arr = (mandelbrot_params_t*) thread_params_uncasted;
 
@@ -158,11 +167,10 @@ void *collect_output( void *thread_params_uncasted )
 
         }
 
-        //std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-
     }
 
     fprintf(stderr, "Finished collecting the outputs\n");
+    delete[] output_queues_begin;
     return nullptr;
 
 }
@@ -171,7 +179,7 @@ void *provide_input( void *thread_params_uncasted )
 {
 
     // first CPU
-    //set_on_cpu(0);
+    set_on_cpu(0);
 
     auto params_arr = (mandelbrot_params_t*) thread_params_uncasted;
 
@@ -193,11 +201,10 @@ void *provide_input( void *thread_params_uncasted )
 
         }
 
-        //std::this_thread::sleep_for(std::chrono::nanoseconds(1));
-
     }
 
     lbl_end:
+    delete[] input_queues_end;
     return nullptr;
 
 }
@@ -227,7 +234,7 @@ int main() {
     pthread_create(&input_thread, NULL, provide_input, params_arr);
 
     // let workers calculate
-    auto *threads = new pthread_t[g.num_threads];
+    auto threads = new pthread_t[g.num_threads];
     u_char i;
     for (i = 0u; i < g.num_threads; i++) {
 
@@ -259,6 +266,10 @@ int main() {
         fputc('\n', stdout);
     }
 
+    // cleanup
+    delete[] g.img;
+    delete[] params_arr;
+    delete[] threads;
     return 0;
 
 }
