@@ -132,7 +132,7 @@ void *collect_output( void *thread_params_uncasted )
 {
 
     // last CPU
-    set_on_cpu(g.num_threads-1);
+    //set_on_cpu(g.num_threads-1);
 
     auto params_arr = (mandelbrot_params_t*) thread_params_uncasted;
 
@@ -144,7 +144,7 @@ void *collect_output( void *thread_params_uncasted )
         for (uint8_t i = 0u; i < g.num_threads; i++) {
 
             // check for new pixels
-            if (params_arr[i].output[output_queues_begin[i]].pixel_number != UINT32_MAX) {
+            while (params_arr[i].output[output_queues_begin[i]].pixel_number != UINT32_MAX) {
 
                 // read pixel result from worker
                 g.img[params_arr[i].output[output_queues_begin[i]].pixel_number] = params_arr[i].output[output_queues_begin[i]].pixel_value;
@@ -171,7 +171,7 @@ void *provide_input( void *thread_params_uncasted )
 {
 
     // first CPU
-    set_on_cpu(0);
+    //set_on_cpu(0);
 
     auto params_arr = (mandelbrot_params_t*) thread_params_uncasted;
 
