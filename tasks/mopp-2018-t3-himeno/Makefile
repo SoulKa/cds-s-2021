@@ -7,6 +7,12 @@ all: $(EXEC)
 $(EXEC):
 	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
+original:
+	gcc -O3 -Wall $(EXEC)_original.c -o $(EXEC)
+
+original-float64:
+	gcc -O3 -Wall -D USE_FLOAT64 $(EXEC)_original.c -o $(EXEC)
+
 float64:
 	$(CXX) $(CXXFLAGS) -D USE_FLOAT64 $(EXEC).cpp -o $(EXEC)
 

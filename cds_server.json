@@ -1,6 +1,6 @@
 [
 	["echo", "/bin/cat"],
-	["mopp-2018-t3-himeno", "himeno"],
-	["mopp-2018-t3-himeno-float64", "himeno-float64"],
-	["mopp-2017-t3-mandelbrot-set", "mandelbrot"]
+	["mopp-2018-t3-himeno", "himeno-original"],
+	["mopp-2018-t3-himeno-float64", "himeno-original-float64"],
+	["mopp-2017-t3-mandelbrot-set", "mandelbrot-original"]
 ]

@@ -7,6 +7,9 @@ all: $(EXEC)
 $(EXEC):
 	$(CXX) $(CXXFLAGS) $(EXEC).cpp -o $(EXEC)
 
+original:
+	$(CXX) $(CXXFLAGS) $(EXEC)_original.cpp -o $(EXEC)
+
 run:
 	cat $(EXEC).in | ./$(EXEC) 
 

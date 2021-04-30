@@ -30,6 +30,9 @@ RUN cd /tmp/task && \
     make clean && \
     make && \
     cp mandelbrot /usr/local/bin/ && \
+    make clean && \
+    make original && \
+    cp mandelbrot /usr/local/bin/mandelbrot-original && \
     rm -rf /tmp/task
 COPY ./tasks/mopp-2017-t3-mandelbrot-set-c# /tmp/task
 RUN cd /tmp/task && \
@@ -46,12 +49,18 @@ RUN cd /tmp/task && \
     make && \
     cp himeno /usr/local/bin/ && \
     make clean && \
+    make original && \
+    cp himeno /usr/local/bin/himeno-original && \
+    make clean && \
     make float64 && \
     cp himeno /usr/local/bin/himeno-float64 && \
+    make clean && \
+    make original-float64 && \
+    cp himeno /usr/local/bin/himeno-original-float64 && \
     rm -rf /tmp/task
-#COPY ./tasks/mopp-2018-t3-himeno-rust /tmp/task
-#RUN cd /tmp/task && \
-#    cargo clean && \
-#    cargo build --release && \
-#    cp target/release/mopp-2018-t3-himeno-rust /usr/local/bin/himeno-rust && \
-#    rm -rf /tmp/task
+COPY ./tasks/mopp-2018-t3-himeno-rust /tmp/task
+RUN cd /tmp/task && \
+    cargo clean && \
+    cargo build --release && \
+    cp target/release/mopp-2018-t3-himeno-rust /usr/local/bin/himeno-rust && \
+    rm -rf /tmp/task
