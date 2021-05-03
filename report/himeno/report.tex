@@ -1,0 +1,57 @@
+% COMMANDS
+\newcommand{\reporttitle}{CDS Lab Report - Himeno benchmark}
+\newcommand{\hb}{\textit{Himeno Benchmark}}
+\newcommand{\jm}{\textit{Jacobi method}}
+
+\input{../title}
+\begin{document}
+\baselineskip16pt
+\maketitle
+\thispagestyle{empty}
+
+% The report content starts here
+
+\clearpage
+\setcounter{page}{1}
+
+% INTRODUCTION
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{The Problem}
+\label{ssec:problem}
+
+The \hb{} is - as the name implies - a benchmarking program. It was developed by Dr. Ryutaro Himeno at the RIKEN Institute in 1996, but the \href{https://i.riken.jp/en/supercom/documents/himenobmt/}{source code} is still available today. Its goal is to provide a comparable, overall performance benchmark between different machines and architectures. This includes the memory throughout, caching behaviour and CPU performance (FLOPS).
+
+The program requires four inputs. The $rows$, $cols$ and $deps$ define the size of the 3D-matrices to work with and $nn$ is used to specify the number of \textit{Jacobi} iterations performed. The \jm{} is an iterative algorithm to determine the solutions of a system of linear equations. Usually, the \jm{} is executed until the solution converges, but in this program the number of iterations is defined by $nn$.
+
+The output of the program is calculated in the last iteration of the \jm{} and is called the \textit{Gosa number}. In a nutshell, the \textit{Gosa number} is the sum of the squared average of the direct neighbours of each voxel $v_{ijk} \in M$, where $M$ is the current three dimensional working matrix.
+
+The task of this lab is to find a way to parallelize the described program in a way that it scales well with an increasing number of available CPUs. To achieve this, strategies of concurrent and distributed systems programming are used to plan, implement and evaluate the parallelized program. The provided output must match the one given by the sequential solution, though the algorithm itself may be modified. Note that it is not the goal of the parallelized program to provide a comparable benchmark, as it was of the original program.
+
+
+\subsection{The Code Base}
+\label{ssec:code-base}
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,185 @@
+% COMMANDS
+\newcommand{\reporttitle}{CDS Lab Report - Mandelbrot Set}
+\newcommand{\ms}{\textit{Mandelbrot Set}}
+
+\input{../title}
+\begin{document}
+\baselineskip18pt
+\maketitle
+\thispagestyle{empty}
+
+% The report content starts here
+
+\clearpage
+\setcounter{page}{1}
+
+% INTRODUCTION
+\section{Introduction}
+\label{sec:introduction}
+
+\subsection{The Problem}
+\label{ssec:problem}
+
+The \ms{} is a set of complex numbers. It is mathematically defined by the recursive function $z_{n+1} = z_n^2 + c$ (1) with $z_0 = 0$ (2) for which $|z_n| < g$ holds. $g \in \mathbb{R}$ is a constant real number that is defined by $ g:= 2.0$ within this project. Complex numbers can be seen as a combination of two real numbers $r, i \in \mathbb{R}$ where $r$ represents the real part and $i$ the imaginary part. This representation simplifies the calculation of the \ms{} such that it only contains basic math.
+
+The task is to write a program that creates an image of the \ms{} for a given amount of $cols$, $rows$ (resolution) and maximum amount of iterations $nn$. The iteration limit is needed or else the program would never terminate. To create an image of the \ms{} it must be mapped to a two dimensional plane. This is done by projecting each row of the image to the imaginary part and each column of the image to the real part of the $c$ from equation (1). This results in $p_max = rows*cols$ pixels and thus equations that need to be solved withing the range of the iterations limit.\\
+
+\noindent In summary, the creation of the image contains the following steps:
+\begin{enumerate}
+  \item Select the next pixel $p < p_max$ to calculate or quit if done
+  \item Set $z_0 = 0$
+  \item Define $c$ depending on the $row$ and $column$ in which $p$ lays in
+  \item Calculate equation (1) up to $z_{nn}$ (might be less if $\exists n: n<nn \land |z_n| < 2.0$)
+  \item Set $p$ to \verb|'#'| if $|z_{nn}| < 2.0$ or to \verb|'.'| if not
+\end{enumerate}
+
+
+\subsection{The Code Base}
+\label{ssec:code-base}
+
+An unoptimized version of the program was already implemented in \verb|C++|. This language was also used in the optimized program, but for evaluation purposes the program was also written in \verb|C| and \verb|C#|. The basic procedure of the unoptimized algorithm can be seen in Listing \ref{lst:pseudo-code-original}.
+
+\begin{lstlisting}[caption={Pseudo code of the unoptimized algorithm}, label={lst:pseudo-code-original}, captionpos=b, frame=tb]
+input: uint rows, uint cols, uint nn
+output: char[]
+begin
+    let img = char[rows][cols]
+    
+    for r in 0..rows:
+        for c in 0..cols:
+            let z = complex(0)
+            let n = 0
+            
+            while |z| < 2.0 and n < nn:
+                z = z*z + complex( c*2 / cols - 1.5, r*2 / rows - 1.0 )
+                n = n + 1
+                
+            img[r][c] = (n == nn) ? '#' : '.'
+    
+    for r in 0..rows:
+        for c in 0..cols: print( img[r][c] )
+        print( '\n' )
+end
+\end{lstlisting}
+
+\noindent It can be seen that this program is following the steps described in the \nameref{sec:introduction}. The unmodified code already contains one optimization in the while loop: The calculation may finish before reaching the iteration limit $nn$ if $|z_n| < 2.0$. This is due to the fact that once $z_n$ grows above the threshold $g := 2.0$ it will not shrink again. This saves a lot of calculations and therefore improves the overall performance of the program but it makes it especially hard to split up the work between multiple threads.
+
+The result is stored in an array of arrays of chars. To calculate it, the algorithm iterates over all rows and columns. The $z_n$ is then computed up to a maximum of $nn$ iterations. Depending on the amount of iterations needed, the pixel \verb|img[r][c]| is set. Finally, each character is printed to the standard output.
+
+The in Listing \ref{lst:pseudo-code-original} implemented algorithm has the complexity $\mathcal{O}(r*c*nn+r*(c+1))$ where $r$, $c$ and $nn$ are the given parameters for $rows$, $columns$ and iteration limit $nn$ respectively. The first part of the sum is derived from the actual calculation, the second from the printing of the result.
+
+
+\section{Optimization Strategies}
+\label{sec:strategies}
+
+To improve the scalability of the shown algorithm, several strategies have been developed and tested. The hard part of developing scalable software (w.r.t. the amount of CPU cores) is to distribute the given workload equally between the CPU cores while still having a correct result in the end. The two most successful strategies are presented in the following sections.
+
+\subsection{Strategy I: Shared Counter}
+\label{ssec:strategy-i}
+
+This strategy is very simple and easy to implement as it only needs one shared variable $p_{next}$ between the \textit{worker threads} that holds the next pixel to work on. To prevent \textit{race conditions}, a \textit{mutex} is used for mutual exclusion when accessing the variable. Once a \textit{worker thread} needs more work, it locks the mutex, stores the content of $p_{next}$ in a thread local variable and increases $p_{next}$ by one. After that, the mutex is unlocked again to make $p_{next}$ available for other threads again.
+
+This strategy provides dynamic work load distribution between the \textit{worker threads} while offering \textit{fairness} and prevent \textit{starving}. It fits the problem of this lab because the workload of the calculation of the \ms{} cannot be split up in a trivial way. This is due to the fact that the iterations needed to calculate each pixel may vary between $1$ and $nn$.\\
+
+
+\noindent The strategy should be scalable and improve the performance for several reasons:
+\begin{itemize}
+    \item Several threads can do the work in parallel that was done by only 1 thread before
+    \item Synchronization is only done once every pixel, for only a single, short access of the shared variable
+    \item The time span in which the mutex is locked is a lot smaller than the time spent calculating
+    \item Workload is dynamically distributed, thus every thread should have the same amount of work no matter how many pixels the work with
+\end{itemize}
+
+
+\subsection{Strategy II: I/O Queues}
+\label{ssec:strategy-ii}
+
+This strategy is substantially different to the first one. It does not split the work statically beforehand but dynamically during the calculations of the pixels, making this solution more complex. The idea is to have again one \textit{worker thread} for each CPU and additionally two \textit{I/O threads} that distribute and collect the work and results respectively. Consequently, synchronization between threads is needed. But, in contrary to the algorithm of \hyperref[ssec:strategy-i]{Strategy I}, this one does not need to iterate $nn$ times to get the value of each pixel. This is only in the worst case.
+
+There is some overhead because of the I/O threads, which should decrease in relation to the amount of CPUs used. The performance reduction by the I/O threads is especially high when using one CPU because of the increased workload and cache usage of this single CPU. To reduce cache misses by having fully shared variables, an atomic variable containing the next free pixel was not used. Instead, the \textbf{input worker} has an \textbf{input queue} and the \textbf{output worker} has an \textbf{output queue} for each worker thread. If, for example, a worker provides a calculated pixel result in its output queue, only this cache line containing output results of this specific worker is invalidated. The only other thread that accesses this line is the output worker while the cache of the other workers stays valid. The same applies for the input distribution.
+
+The input worker will iterate over all input queues of the worker threads, trying to fill them up, while the output worker keeps emptying the output queues. Having separate I/O queues for each thread involves one major advantage: no locking, no mutexes and no semaphores needed. This is possible because the queues are \textbf{unidirectional} and due to the \textbf{1:1 relation} between the queues' I/O thread and the worker thread. An input queue is always filled by the one input thread and emptied by a single worker thread, the output thread gets filled by a single worker and emptied by the output thread.
+
+
+\clearpage
+\section{Implementation}
+\label{ssec:Details}
+
+
+\subsection{General Improvements}
+\label{ssec:Improvements}
+
+Several improvements have been made on the code. The following affect both, the single-threaded as well as the multi-threaded program.
+
+The one with the biggest effect is the simplification of the calculations. The while loop of the \ms{} (line 11 in \hyperref[lst:pseudo-code-original]{Listing 1}) calculation is the part of the program where the most computation time is spent. Optimizing this loop will have the biggest effect on the overall performance of the program.
+
+The following improvements have been made on the code for the \ms{} calculation:
+\begin{itemize}
+    \item Substituting the addition of the freshly created complex number by a precalculated, per-pixel constant $c$
+    \item Work directly on floats instead of using the class \verb|std::complex<float>|
+    \item Optimizing the comparison $|z_n| < 2.0$ by squaring. The resulting comparison is $Re(z_n)^2 + Im(z_n)^2 < 4.0$
+    \item Storing the already squared real and imaginary part of the above term and reusing them for calculating $z_n^2$ in the next step
+\end{itemize}
+
+Further, smaller optimizations are:
+\begin{itemize}
+    \item Using one block of memory/one array instead of an array of arrays to store the resulting image in. This should improve cache access due to locality
+    \item Using \verb$scanf()$, \verb$printf()$, \verb$fwrite()$ and \verb$fputc()$ instead of the \verb$std::cin$ and \verb$std::cout$ streams
+    \item Using structs instead of any variables for the calculations and I/O management. The structs are aligned to start in a new cache line (at 64byte) and are padded to prevent any other threads to invalidate it
+\end{itemize}
+
+
+\subsection{Parallel Implementation}
+\label{ssec:Improvements}
+
+\hyperref[ssec:strategy-ii]{Strategy II} was implemented as it is the more promising strategy. As already mentioned, \verb$C++$ is used. The thread creation is done with \verb$pthread$. The basic workflow is like this:
+
+\begin{enumerate}
+    \item Read parameters from \verb$stdin$
+    \item Create a single \verb$char[]$ that will contain the result
+    \item Create the \textit{input worker} thread that already starts to fill up the \textit{input queues} of the \textit{worker threads}
+    \item Create as many \textit{worker threads} as the summed up \textit{thread concurrency} of all CPUs. This is given by the \verb$MAX_CPUS$ environment variable
+    \item Create the \textit{output worker} that collects the results of each \textit{worker thread} from their \textit{output queues}
+    \item Wait for the \textit{input worker} thread to finish and join it. Then join the \textit{output worker} thread
+    \item Signal the threads that there is no further input coming by setting the global \verb$bool done=true$
+    \item Join all \textit{worker threads}
+    \item Print the result
+\end{enumerate}
+
+On each thread creation, the parameters are given as a pointer to a struct. The structs are aligned to start with the beginning of a cache line (64 byte) and the important parts of them are padded such that they also fill up the full cache line. This should prevent unnecessary cache invalidation thus reducing cache misses. In fact, cache misses are pretty low for this implementation. A miss rate of 0.01\% has been measured on a 6 core (12 thread) computer with 19.50MiByte cache, which makes it a bit more than half of the cache size of the evaluation system. But it is expected to have more cache misses with an increasing number of CPUs, since the \textit{I/O worker} threads have more caches to invalidate.
+
+To provide maximum efficiency, the \textit{input-} and \textit{output queues} have been implemented as raw arrays of a fixed size, to match exactly one cache line. The \textit{input queues} consist of 16 \verb$uint32_t$ values and gets initialized with \verb$UINT32_MAX$. It gets filled up with pixel numbers which the corresponding \textit{worker thread} has to calculate. If the pixel number is \verb$UINT32_MAX$, it means that the queue is empty and the \textit{worker thread} has to wait for more input. Once the value is not \verb$UINT32_MAX$ anymore, the \textit{worker thread} reads the pixel number, stores it in a thread local variable and changes the queue value to \verb$UINT32_MAX$ again. The \textit{input worker} may now store new pixel numbers in it again. Note that the \textit{worker thread} always works at the beginning of the queue, while the \textit{input worker} fills the queue up from the end to provide a real \textit{FIFO} behaviour.
+
+The \textit{output} queues are implemented on a similar way, but consist of 8 $<uint32_t, char>$ pairs that represent one pixel value for a specific pixel number. To represent that a field of the queue is empty, the pixel number is again set to \verb$UINT32_MAX$. A \textit{worker thread} fills up its \textit{output queue} from the back until it is full, the \textit{output worker} thread keeps emptying from the beginning.
+
+Each beginning and end of a queue is stored in a thread local variable since it is only written by a single thread and read by another single thread. Thus it does not need any synchronization for them. Note that there is still implicit synchronization when reading or writing a queue depending on the pixel number that is stored at that queue position.
+
+
+\section{Evaluation}
+\label{sec:Evaluation}
+
+
+
+
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
