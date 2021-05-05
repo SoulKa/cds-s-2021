@@ -1,0 +1,15 @@
+https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-30T20:17:30+02:00.html
+c4e204b77e805787b6aaa5fb318883e5395b5320
+
+program; run; cpus; duration;
+mopp-2017-t3-mandelbrot-set; 1; 1; 56334715
+mopp-2017-t3-mandelbrot-set; 1; 2; 56922613
+mopp-2017-t3-mandelbrot-set; 1; 4; 56300359
+mopp-2017-t3-mandelbrot-set; 1; 8; 56317834
+mopp-2017-t3-mandelbrot-set; 1; 14; 56440845
+mopp-2017-t3-mandelbrot-set; 1; 16; 56849020
+mopp-2017-t3-mandelbrot-set; 1; 24; 56285330
+mopp-2017-t3-mandelbrot-set; 1; 28; 56331348
+mopp-2017-t3-mandelbrot-set; 1; 32; 56430271
+mopp-2017-t3-mandelbrot-set; 1; 48; 56234611
+mopp-2017-t3-mandelbrot-set; 1; 56; 56461136
