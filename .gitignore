@@ -14,3 +14,5 @@ test
 judge.*
 *.o
 *.out
+
+plotting
