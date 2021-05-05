@@ -32,7 +32,6 @@
 
 #include <mutex>
 #include <thread>
-#include <iostream>
 #include <atomic>
 #include <chrono>
 
@@ -85,9 +84,8 @@ int main( int argc, char *argv[] ) {
     uint num_iterations, num_rows, num_cols, num_deps;
 
     // get amount of cores
-    NUM_CORES = getenv("MAX_CPUS") == nullptr ? thread::hardware_concurrency() : atoi(getenv("MAX_CPUS"));
-    assert((NUM_CORES > 0 && NUM_CORES <= 56) && "Could not get the number of cores!");
-    cerr << "Working with " << NUM_CORES << " cores" << endl;
+    NUM_CORES = atoi(getenv("MAX_CPUS"));
+    fprintf(stderr, "Working with %u cores\n", NUM_CORES);
 
     if (argc == 5) {
         num_rows = stoul(argv[1]);
@@ -95,14 +93,13 @@ int main( int argc, char *argv[] ) {
         num_deps = stoul(argv[3]);
         num_iterations = stoul(argv[4]);
     } else {
-        cin >> num_rows;
-        cin >> num_cols;
-        cin >> num_deps;
-        cin >> num_iterations;
+        (void)! scanf("%u", &num_rows);
+        (void)! scanf("%u", &num_cols);
+        (void)! scanf("%u", &num_deps);
+        (void)! scanf("%u", &num_iterations);
     }
 
-    fprintf(stderr, "Matrix size is %ux%ux%u with %u iterations", num_rows, num_cols, num_deps, num_iterations);
-    cerr << endl;
+    fprintf(stderr, "Matrix size is %ux%ux%u with %u iterations\n", num_rows, num_cols, num_deps, num_iterations);
 
     // create matrices
     p = new Matrix<FLOAT_TYPE_TO_USE>(num_rows-2, num_cols-2, num_deps-2, NUM_CORES);
