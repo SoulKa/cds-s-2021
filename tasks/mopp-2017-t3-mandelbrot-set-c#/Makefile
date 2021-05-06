@@ -6,6 +6,9 @@ all: $(EXEC)
 $(EXEC):
 	dotnet publish -c Release
 
+debug:
+	dotnet publish
+
 run:
 	dotnet run
 
