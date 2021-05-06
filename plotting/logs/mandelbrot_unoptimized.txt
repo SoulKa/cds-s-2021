@@ -1,0 +1,15 @@
+https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-30T20:17:30+02:00.html
+c4e204b77e805787b6aaa5fb318883e5395b5320
+
+program; run; cpus; duration;
+mopp-2018-t3-himeno-float64; 1; 1; 188411360
+mopp-2018-t3-himeno-float64; 1; 2; 213364566
+mopp-2018-t3-himeno-float64; 1; 4; 206631070
+mopp-2018-t3-himeno-float64; 1; 8; 215842820
+mopp-2018-t3-himeno-float64; 1; 14; 206278575
+mopp-2018-t3-himeno-float64; 1; 16; 206692296
+mopp-2018-t3-himeno-float64; 1; 24; 216049012
+mopp-2018-t3-himeno-float64; 1; 28; 207135978
+mopp-2018-t3-himeno-float64; 1; 32; 206728647
+mopp-2018-t3-himeno-float64; 1; 48; 194313080
+mopp-2018-t3-himeno-float64; 1; 56; 207050313
