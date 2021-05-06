@@ -43,16 +43,16 @@ struct alignas(CACHELINE_SIZE) mandelbrot_params_t {
 struct alignas(CACHELINE_SIZE) mandelbrot_vars_t {
     uint8_t input_queue_begin = 0u;
     uint8_t output_queue_end = 0u;
-    uint32_t p;
-    uint32_t r;
-    uint32_t c;
-    uint32_t n;
-    float z_r;
-    float z_i;
-    float z_r_sqr;
-    float z_i_sqr;
-    float c_r;
-    float c_i;
+    uint32_t p;     // current pixel number to work on
+    uint32_t r;     // current row to work on (calculated from p)
+    uint32_t c;     // current column to work on (calculated from p)
+    uint32_t n;     // current iteration
+    float z_r;      // real part of z
+    float z_i;      // imaginative part of z
+    float z_r_sqr;  // z_r squared
+    float z_i_sqr;  // z_i squared
+    float c_r;      // real part of the constant "c" for the current pixel
+    float c_i;      // imaginative part of the constant "c" for the current pixel
     float tmp;
     uint8_t padding[CACHELINE_SIZE-2*sizeof(uint8_t)-4*sizeof(uint32_t)-7*sizeof(float)];
 };
