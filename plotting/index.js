@@ -81,18 +81,20 @@ async function main() {
         const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.pdf");
         const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.pdf");
         const log = fs.readFileSync(logFilepath, "utf8");
-        let scalingPlotname = filename;
+        let scalingPlotname = "";
 
         // extract data
         /** @type {Map<number, number[]>} Cores => Times */
         const data = new Map();
         log.split("\n").map( l => l.split(";").map( w => w.trim() ) ).forEach( l => {
+            if (scalingPlotname === "" && l[0].startsWith("title=")) scalingPlotname = l[0].replace("title=", "");
             if (l.length !== 4 || isNaN(Number.parseInt(l[3]))) return;
-            if (data.size === 0) scalingPlotname = l[0];
+            if (data.size === 0 && scalingPlotname === "") scalingPlotname = l[0];
             const cores = Number.parseInt(l[2]);
             if (!data.has(cores)) data.set(cores, []);
             data.get(cores).push(Number.parseInt(l[3]));
         });
+        if (scalingPlotname === "") scalingPlotname = filename;
 
         // check if valid logfile
         if (data.size === 0) {
