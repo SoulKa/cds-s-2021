@@ -40,8 +40,9 @@ function getParallelCodeBySpeedup( speedup, numCores ) {
  * when the given speedup was achieved
  */
 function amdahlsLaw( parallelCodePart, numCores ) {
+    if (parallelCodePart >= 1.0) return numCores;
     const p = Math.min(parallelCodePart, 1.0), n = numCores;
-    return 1 / ( 1.0 + (p/n) );
+    return 1 / ( (1-p) + (p/n) );
 }
 
 /**
@@ -55,7 +56,7 @@ async function createPlot( figure, filepath ) {
         plotly.getImage(
             figure,
             {
-                format: "png",
+                format: "pdf",
                 width: 1000,
                 height: 500
             },
@@ -77,8 +78,8 @@ async function main() {
 
         console.log(`Processing logs for ${filename} ...`);
         const logFilepath = path.join(LOG_DIR, filename+".txt");
-        const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.png");
-        const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.png");
+        const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.pdf");
+        const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.pdf");
         const log = fs.readFileSync(logFilepath, "utf8");
         let scalingPlotname = filename;
 
@@ -160,9 +161,9 @@ async function main() {
                         marker: {
                             size: 0
                         },
-                        name: `Amdahl's Law; p=${(p28,100).toFixed(2)}%`
+                        name: `Amdahl's Law; p=${(Math.min(p28, 1)*100).toFixed(2)}%`
                     },
-                    {
+                    p28 >= 1 && p56 >= 1 ? {} : {
                         x: AMDAHLS_LAW_X,
                         y: AMDAHLS_LAW_X.map( n => amdahlsLaw(p56, n) ),
                         type: "scatter",
@@ -173,7 +174,7 @@ async function main() {
                         marker: {
                             size: 0
                         },
-                        name: `Amdahl's Law; p=${(p56, 100).toFixed(2)}%`
+                        name: `Amdahl's Law; p=${(Math.min(p56, 1)*100).toFixed(2)}%`
                     },
                     {
                         x,
