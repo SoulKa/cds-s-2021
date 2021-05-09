@@ -76,6 +76,7 @@ async function main() {
     // plot one image per log
     for (const filename of LOG_FILENAMES) {
 
+        console.log("\n------------------------------------------------------");
         console.log(`Processing logs for ${filename} ...`);
         const logFilepath = path.join(LOG_DIR, filename+".txt");
         const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.pdf");
@@ -104,6 +105,7 @@ async function main() {
 
         // calculate mean time over all runs
         const meanData = new Map( Array.from(data).map( ([cores, times]) => [cores, times.reduce( (sum, t) => sum+t, 0 )/times.length] ) );
+        console.log("Mean Times: " + Array.from(meanData).map( ([cores, time]) => `@${cores}=${time.toFixed()}μs` ).join(", "));
         const basetime = meanData.get(1); // time im microsecs for 1 core
 
         // calculate amdahls law related data
@@ -208,6 +210,8 @@ async function main() {
             },
             parallelCodePlotFilepath
         );
+
+        console.log("------------------------------------------------------");
 
     }
 
