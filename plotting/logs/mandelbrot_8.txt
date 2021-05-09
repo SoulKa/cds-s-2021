@@ -4,20 +4,6 @@ https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c7
 Version: 2nd of the reworked Mandelbrot version. Simplified math
 
 program; run; cpus; duration;
-mopp-2018-t3-himeno-float64; 1; 1; 333349836
-mopp-2018-t3-himeno-float64; 1; 2; 169334264
-mopp-2018-t3-himeno-float64; 1; 4; 96507640
-mopp-2018-t3-himeno-float64; 1; 8; 52270949
-mopp-2018-t3-himeno-float64; 1; 14; 31950648
-mopp-2018-t3-himeno-float64; 1; 16; 39727786
-mopp-2018-t3-himeno-float64; 1; 24; 22729961
-mopp-2018-t3-himeno-float64; 1; 28; 20369594
-mopp-2018-t3-himeno-float64; 1; 32; 22347248
-mopp-2018-t3-himeno-float64; 1; 48; 19543157
-mopp-2018-t3-himeno-float64; 1; 56; 19294185
-2021-05-09T16:49:21+02:00 | DONE Evaluating mopp-2018-t3-himeno-float64 ...
-2021-05-09T16:49:21+02:00 | Evaluating mopp-2017-t3-mandelbrot-set - time budget: 15 minutes:
-program; run; cpus; duration;
 mopp-2017-t3-mandelbrot-set; 1; 1; 19325120
 mopp-2017-t3-mandelbrot-set; 1; 2; 6539414
 mopp-2017-t3-mandelbrot-set; 1; 4; 2921629
