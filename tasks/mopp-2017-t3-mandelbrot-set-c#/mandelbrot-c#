@@ -1,2 +1,2 @@
 #!/bin/sh
-./opt/mandelbrot-c#/mandelbrot
+/opt/mandelbrot-c#/mandelbrot

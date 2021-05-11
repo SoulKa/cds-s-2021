@@ -41,6 +41,13 @@ RUN cd /tmp/task && \
     mv bin/Release/netcoreapp5.0/publish /opt/mandelbrot-c# && \
     cp mandelbrot-c# /usr/local/bin/ && \
     rm -rf /tmp/task
+COPY ./tasks/mopp-2017-t3-mandelbrot-set-c#-unoptimized /tmp/task
+RUN cd /tmp/task && \
+    make clean && \
+    make && \
+    mv bin/Release/netcoreapp5.0/publish /opt/mandelbrot-c#-unoptimized && \
+    cp mandelbrot-c#-unoptimized /usr/local/bin/ && \
+    rm -rf /tmp/task
 
 # task 3
 COPY ./tasks/mopp-2018-t3-himeno /tmp/task
