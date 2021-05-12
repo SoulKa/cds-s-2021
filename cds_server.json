@@ -1,6 +1,6 @@
 [
 	["echo", "/bin/cat"],
 	["mopp-2018-t3-himeno", "himeno"],
-	["mopp-2018-t3-himeno-float64", "himeno-float64"],
+	["mopp-2018-t3-himeno-float64", "himeno-rust-unoptimized"],
 	["mopp-2017-t3-mandelbrot-set", "mandelbrot-c#-unoptimized"]
 ]

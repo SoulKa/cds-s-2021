@@ -71,3 +71,9 @@ RUN cd /tmp/task && \
     cargo build --release && \
     cp target/release/mopp-2018-t3-himeno-rust /usr/local/bin/himeno-rust && \
     rm -rf /tmp/task
+COPY ./tasks/mopp-2018-t3-himeno-rust-unoptimized /tmp/task
+RUN cd /tmp/task && \
+    cargo clean && \
+    cargo build --release && \
+    cp target/release/mopp-2018-t3-himeno-rust /usr/local/bin/himeno-rust-unoptimized && \
+    rm -rf /tmp/task
