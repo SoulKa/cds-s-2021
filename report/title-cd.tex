@@ -1,0 +1,68 @@
+\documentclass[english, 11pt]{tudscrartcl}
+\iftutex
+    \usepackage{fontspec}
+\else
+    \usepackage[T1]{fontenc}
+\fi
+
+% OPTIONS
+\KOMAoptions{
+    titlepage=true
+}
+
+\usepackage{babel}
+
+% For set of numbers in math
+\usepackage{amsfonts}
+
+% For tables
+\usepackage{tabularx}
+\usepackage{makecell}
+\usepackage{multirow}
+\usepackage{booktabs}
+
+% For listings (code blocks)
+\usepackage{listings}
+\lstset
+{ %Formatting for code in appendix
+    basicstyle=\footnotesize\ttfamily,
+    numbers=left,
+    stepnumber=1,
+    showstringspaces=false,
+    tabsize=4,
+    breaklines=true,
+    breakatwhitespace=false,
+}
+
+% For references
+\usepackage{nameref}
+\usepackage{hyperref}
+
+% For figures
+\usepackage{graphicx}
+
+% Spacings
+\usepackage{enumitem}\setlist{noitemsep}
+\newcommand{\setspacings}{
+    \baselineskip=15pt
+    \parskip=10pt
+    \parindent=0pt
+}
+
+% TITLE
+\faculty{Computer Science}
+\institute{Institute of Systems Architecture}
+\chair{Chair of Systems Engineering}
+\date{\today}
+
+\author{%
+    Fritz Louis Wilke%
+    \emailaddress*{E-Mail: fritz.wilke@tu-dresden.de}%
+    \matriculationnumber{4536116}%
+    \discipline{M. Sc. Computer Science}%
+    \course{INF-MA-PR (graded)}%
+}
+
+
+\title{\reporttitle}
+\subtitle{Lab: Concurrent and Distributed Systems}
