@@ -16,7 +16,8 @@ if (!fs.existsSync(LOG_DIR)) fs.mkdirSync(LOG_DIR);
 const LOG_FILENAMES = fs.readdirSync(LOG_DIR, { withFileTypes: true }).filter( f => f.isFile() && f.name.endsWith(".txt") ).map( f => f.name.slice(0, -4) );
 
 /** @type {number[]} Contains the numbers 2^x for x = 0..16 */
-const AMDAHLS_LAW_X = [1, 2, 4, 8, 14, 16, 24, 28, 32, 48, 56];
+const X_VALUES = [1, 2, 4, 8, 14, 16, 24, 28, 32, 48, 56];
+const X_LABELS = [1, 2, 4, 8, 14, 28, 56];
 //for (let i=0;i<=16;i++) AMDAHLS_LAW_X.push(Math.pow(2, i));
 
 /**
@@ -57,8 +58,8 @@ async function createPlot( figure, filepath ) {
             figure,
             {
                 format: "pdf",
-                width: 1000,
-                height: 500
+                width: 400,
+                height: 400
             },
             (err, msg) => err ? reject([err, msg]) : resolve(msg)
         )
@@ -74,11 +75,12 @@ async function createPlot( figure, filepath ) {
 async function main() {
 
     // plot one image per log
-    for (const filename of LOG_FILENAMES) {
+    for (let filename of LOG_FILENAMES) {
 
         console.log("\n------------------------------------------------------");
         console.log(`Processing logs for ${filename} ...`);
         const logFilepath = path.join(LOG_DIR, filename+".txt");
+        filename = filename.replace("#", "s");
         const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.pdf");
         const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.pdf");
         const log = fs.readFileSync(logFilepath, "utf8");
@@ -121,6 +123,13 @@ async function main() {
             y.push(basetime/meanTime);  // speedup
         }
 
+        const MARGIN = {
+            l: 50,
+            r: 0,
+            b: 50,
+            t: 50,
+        };
+
         // create scaling plot
         if (!fs.existsSync(scalingPlotFilepath)) await createPlot(
             {
@@ -129,23 +138,24 @@ async function main() {
                     y,
                     type: "scatter",
                     line: {
-                        width: 5
+                        width: 3
                     },
                     marker: {
-                        size: 10
+                        size: 6
                     }
                 }],
                 layout: {
                     xaxis: {
-                        title: "CPU-Cores",
-                        tickvals: x,
+                        title: "<b>CPU-Cores</b>",
+                        tickvals: X_LABELS,
                         tickmode: "array",
                         type: "log"
                     },
                     yaxis: {
-                        title: "Speedup"
+                        title: "<b>Speedup</b>"
                     },
-                    title: scalingPlotname
+                    title: `<b>${scalingPlotname}</b>`,
+                    margin: MARGIN,
                 }
             },
             scalingPlotFilepath
@@ -156,8 +166,8 @@ async function main() {
             {
                 data: [
                     {
-                        x: AMDAHLS_LAW_X,
-                        y: AMDAHLS_LAW_X.map( n => amdahlsLaw(p28, n) ),
+                        x: X_VALUES,
+                        y: X_VALUES.map( n => amdahlsLaw(p28, n) ),
                         type: "scatter",
                         line: {
                             width: 2
@@ -168,8 +178,8 @@ async function main() {
                         name: `Amdahl's Law; p=${(Math.min(p28, 1)*100).toFixed(2)}%`
                     },
                     p28 >= 1 && p56 >= 1 ? {} : {
-                        x: AMDAHLS_LAW_X,
-                        y: AMDAHLS_LAW_X.map( n => amdahlsLaw(p56, n) ),
+                        x: X_VALUES,
+                        y: X_VALUES.map( n => amdahlsLaw(p56, n) ),
                         type: "scatter",
                         line: {
                             width: 2,
@@ -197,7 +207,7 @@ async function main() {
                 layout: {
                     xaxis: {
                         title: "CPU-Cores",
-                        tickvals: AMDAHLS_LAW_X,
+                        tickvals: X_LABELS,
                         tickmode: "array",
                         type: "log"
                     },
@@ -205,7 +215,8 @@ async function main() {
                         title: "Speedup"
                     },
                     title: "Amdahl's law",
-                    showlegend: true
+                    showlegend: true,
+                    margin: MARGIN
                 }
             },
             parallelCodePlotFilepath
