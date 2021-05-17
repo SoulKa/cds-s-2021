@@ -18,6 +18,7 @@ const LOG_FILENAMES = fs.readdirSync(LOG_DIR, { withFileTypes: true }).filter( f
 /** @type {number[]} Contains the numbers 2^x for x = 0..16 */
 const X_VALUES = [1, 2, 4, 8, 14, 16, 24, 28, 32, 48, 56];
 const X_LABELS = [1, 2, 4, 8, 14, 28, 56];
+/** @type {number[]} */ const X_LABELS_AL = Array.apply(null, { length: 17 }).map( (_, i) => Math.pow(2, i) );
 //for (let i=0;i<=16;i++) AMDAHLS_LAW_X.push(Math.pow(2, i));
 
 /**
@@ -76,6 +77,7 @@ async function main() {
 
     // plot one image per log
     for (let filename of LOG_FILENAMES) {
+        if (filename.includes("unoptimized")) continue;
 
         console.log("\n------------------------------------------------------");
         console.log(`Processing logs for ${filename} ...`);
@@ -166,27 +168,28 @@ async function main() {
             {
                 data: [
                     {
-                        x: X_VALUES,
-                        y: X_VALUES.map( n => amdahlsLaw(p28, n) ),
+                        x: X_LABELS_AL,
+                        y: X_LABELS_AL.map( n => amdahlsLaw(p28, n) ),
                         type: "scatter",
                         line: {
-                            width: 2
+                            width: 1,
+                            dash: "dot"
                         },
                         marker: {
-                            size: 0
+                            size: 1
                         },
                         name: `Amdahl's Law; p=${(Math.min(p28, 1)*100).toFixed(2)}%`
                     },
                     p28 >= 1 && p56 >= 1 ? {} : {
-                        x: X_VALUES,
-                        y: X_VALUES.map( n => amdahlsLaw(p56, n) ),
+                        x: X_LABELS_AL,
+                        y: X_LABELS_AL.map( n => amdahlsLaw(p56, n) ),
                         type: "scatter",
                         line: {
-                            width: 2,
+                            width: 1,
                             dash: "dash"
                         },
                         marker: {
-                            size: 0
+                            size: 1
                         },
                         name: `Amdahl's Law; p=${(Math.min(p56, 1)*100).toFixed(2)}%`
                     },
@@ -195,11 +198,10 @@ async function main() {
                         y,
                         type: "scatter",
                         line: {
-                            width: 2,
-                            dash: "dot"
+                            width: 1
                         },
                         marker: {
-                            size: 6
+                            size: 4
                         },
                         name: "Measurement"
                     }
@@ -207,7 +209,7 @@ async function main() {
                 layout: {
                     xaxis: {
                         title: "CPU-Cores",
-                        tickvals: X_LABELS,
+                        tickvals: X_LABELS_AL,
                         tickmode: "array",
                         type: "log"
                     },
@@ -216,7 +218,12 @@ async function main() {
                     },
                     title: "Amdahl's law",
                     showlegend: true,
-                    margin: MARGIN
+                    margin: MARGIN,
+                    legend: {
+                        xanchor: "right",
+                        x: 1,
+                        y: 0.1
+                    }
                 }
             },
             parallelCodePlotFilepath
