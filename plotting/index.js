@@ -87,12 +87,14 @@ async function main() {
         const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.pdf");
         const log = fs.readFileSync(logFilepath, "utf8");
         let scalingPlotname = "";
+        let alPlotname = "";
 
         // extract data
         /** @type {Map<number, number[]>} Cores => Times */
         const data = new Map();
         log.split("\n").map( l => l.split(";").map( w => w.trim() ) ).forEach( l => {
             if (scalingPlotname === "" && l[0].startsWith("title=")) scalingPlotname = l[0].replace("title=", "");
+            if (alPlotname === "" && l[0].startsWith("title-AL=")) alPlotname = l[0].replace("title-AL=", "");
             if (l.length !== 4 || isNaN(Number.parseInt(l[3]))) return;
             if (data.size === 0 && scalingPlotname === "") scalingPlotname = l[0];
             const cores = Number.parseInt(l[2]);
@@ -216,7 +218,7 @@ async function main() {
                     yaxis: {
                         title: "Speedup"
                     },
-                    title: "Amdahl's law",
+                    title: alPlotname || "Amdahl's law",
                     showlegend: true,
                     margin: MARGIN,
                     legend: {
