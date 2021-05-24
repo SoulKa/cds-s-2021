@@ -1,3 +1,8 @@
+https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-23T12:26:48+02:00.html
+495497e1bb3a5ab530ef0e64bf540d15f86c44d5
+version with optimizations but with fixed workload
+title=Scaling of C++ Version 1
+
 program; run; cpus; duration;
 mopp-2018-t3-himeno-float64; 1; 1; 290681623
 mopp-2018-t3-himeno-float64; 1; 2; 153281068
