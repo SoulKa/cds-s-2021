@@ -6,6 +6,9 @@ mod matrix;
 use std::io;
 use std::env;
 use std::thread;
+use std::sync::Arc;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 use matrix::Matrix;
 
 // DEFINES
@@ -42,7 +45,7 @@ fn read_number_from_stdin() -> u32 {
 
 }
 
-fn calculate_partial( ptr_p : usize, ptr_wrk : usize, r_begin : usize, r_end : usize, is_last_iteration : bool ) -> f64 {
+fn calculate_partial( ptr_p : usize, ptr_wrk : usize, atomic_row : Arc<AtomicUsize>, is_last_iteration : bool ) -> f64 {
 
     unsafe {
 
@@ -51,9 +54,12 @@ fn calculate_partial( ptr_p : usize, ptr_wrk : usize, r_begin : usize, r_end : u
 
         let cols = p.cols;
         let deps = p.deps;
+        let rows = p.rows;
         let mut gosa = 0.0;
 
-        for r in r_begin..r_end {
+        // while there is work to do (iterate over the rows via atomic)
+        let mut r;
+        while (r = atomic_row.fetch_add(1, Ordering::SeqCst)) == () && r < rows {
             for c in 0..cols {
                 for d in 0..deps {
 
@@ -101,11 +107,6 @@ fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f
 
     // vars
     let mut gosa = 0.0;
-    let mut thread_work = vec![0; num_threads+1];
-    for i in 0..num_threads {
-        thread_work[i] = i*p.rows/num_threads;
-    }
-    thread_work[num_threads] = p.rows;
 
     // pointers
     let mut ptr_p = (&mut p as *mut Matrix) as usize;
@@ -116,12 +117,12 @@ fn jacobi( rows : usize, cols : usize, deps : usize, num_iterations : u32 ) -> f
     for n in 0..num_iterations {
 
         let mut threads = Vec::new();
+        let atomic_row = Arc::new( AtomicUsize::new(0) );
 
         // calculate full matrix
-        for i in 0..num_threads {
-            let r_begin = thread_work[i];
-            let r_end = thread_work[i+1];
-            threads.push( thread::spawn( move || calculate_partial(ptr_p, ptr_wrk, r_begin, r_end, n == num_iterations-1) ) );
+        for _ in 0..num_threads {
+            let atomic_row = Arc::clone(&atomic_row);
+            threads.push( thread::spawn( move || calculate_partial(ptr_p, ptr_wrk, atomic_row, n == num_iterations-1) ) );
         }
         for thread in threads {
             match thread.join() {
