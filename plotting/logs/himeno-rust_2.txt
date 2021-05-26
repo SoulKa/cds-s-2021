@@ -1,0 +1,28 @@
+https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-05-26T20:17:11+02:00.html
+3fadcfc33229b180e11c31f4d9eb98d393ce9a33
+Rust version with atomic variable
+
+title=Scaling of Rust Version
+program; run; cpus; duration;
+mopp-2018-t3-himeno-float64; 1; 1; 112150043
+mopp-2018-t3-himeno-float64; 1; 2; 57553814
+mopp-2018-t3-himeno-float64; 1; 4; 33257716
+mopp-2018-t3-himeno-float64; 1; 8; 18707423
+mopp-2018-t3-himeno-float64; 1; 14; 13626736
+mopp-2018-t3-himeno-float64; 1; 16; 16266238
+mopp-2018-t3-himeno-float64; 1; 24; 9144423
+mopp-2018-t3-himeno-float64; 1; 28; 7852724
+mopp-2018-t3-himeno-float64; 1; 32; 7863298
+mopp-2018-t3-himeno-float64; 1; 48; 7366781
+mopp-2018-t3-himeno-float64; 1; 56; 7147454
+mopp-2018-t3-himeno-float64; 2; 1; 112024025
+mopp-2018-t3-himeno-float64; 2; 2; 58438470
+mopp-2018-t3-himeno-float64; 2; 4; 33290638
+mopp-2018-t3-himeno-float64; 2; 8; 18962031
+mopp-2018-t3-himeno-float64; 2; 14; 13566286
+mopp-2018-t3-himeno-float64; 2; 16; 16348988
+mopp-2018-t3-himeno-float64; 2; 24; 9122816
+mopp-2018-t3-himeno-float64; 2; 28; 7842757
+mopp-2018-t3-himeno-float64; 2; 32; 7841696
+mopp-2018-t3-himeno-float64; 2; 48; 7360724
+mopp-2018-t3-himeno-float64; 2; 56; 7069127

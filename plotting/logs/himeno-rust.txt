@@ -1,5 +1,6 @@
 https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-04-25T00:28:40+02:00.html
 72521c7f12c2bb3aebbbafbfccaa171163d671e6
+title=Scaling of Rust Version
 
 program; run; cpus; duration;
 mopp-2018-t3-himeno-float64; 1; 1; 112729957
