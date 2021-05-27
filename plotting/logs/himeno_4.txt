@@ -1,6 +1,7 @@
 https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-05-09T16:17:19+02:00.html
 43c3df53ecea64e10961dca8c41823ed766cba4c
 
+title=Scaling of C++ Float 32 Version
 program; run; cpus; duration;
 mopp-2018-t3-himeno; 1; 1; 352771595
 mopp-2018-t3-himeno; 1; 2; 186120899

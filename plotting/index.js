@@ -210,15 +210,15 @@ async function main() {
                 ],
                 layout: {
                     xaxis: {
-                        title: "CPU-Cores",
+                        title: "<b>CPU-Cores</b>",
                         tickvals: X_LABELS_AL,
                         tickmode: "array",
                         type: "log"
                     },
                     yaxis: {
-                        title: "Speedup"
+                        title: "<b>Speedup</b>"
                     },
-                    title: alPlotname || "Amdahl's law",
+                    title: `<b>${alPlotname || "Amdahl's law"}</b>`,
                     showlegend: true,
                     margin: MARGIN,
                     legend: {
