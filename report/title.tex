@@ -1,0 +1,109 @@
+% Use only LaTeX2e, calling the article.cls class and 12-point type.
+
+\documentclass[12pt]{article}
+
+
+% Use times if you have the font installed; otherwise, comment out the
+% following line.
+
+\usepackage{times}
+
+% For set of numbers in math
+\usepackage{amsfonts}
+
+% For listings (code blocks)
+\usepackage{listings}
+\lstset
+{ %Formatting for code in appendix
+    basicstyle=\footnotesize\ttfamily,
+    numbers=left,
+    stepnumber=1,
+    showstringspaces=false,
+    tabsize=4,
+    breaklines=true,
+    breakatwhitespace=false,
+}
+
+% For references
+\usepackage{nameref}
+\usepackage{hyperref}
+
+% For figures
+\usepackage{graphicx}
+
+% The following parameters seem to provide a reasonable page setup.
+\usepackage{titlesec}
+
+\topmargin 0.0cm
+\oddsidemargin 0.2cm
+\textwidth 16cm 
+\textheight 21cm
+\footskip 1.0cm
+
+\titlespacing*{\section}
+{0pt}{6.5ex plus 1ex minus .2ex}{1.3ex plus .2ex}
+\titlespacing*{\subsection}
+{0pt}{6.5ex plus 1ex minus .2ex}{1.3ex plus .2ex}
+\titlespacing*{\subsubsection}
+{0pt}{6.5ex plus 1ex minus .2ex}{1.3ex plus .2ex}
+
+\newcommand{\defaultitemsep}{\itemsep -0.5em}
+
+%The next command sets up an environment for the abstract to your paper.
+
+\newenvironment{sciabstract}{%
+\begin{quote} \bf}
+{\end{quote}}
+
+
+% If your reference list includes text notes as well as references,
+% include the following line; otherwise, comment it out.
+
+\renewcommand\refname{References and Notes}
+
+% The following lines set up an environment for the last note in the
+% reference list, which commonly includes acknowledgments of funding,
+% help, etc.  It's intended for users of BibTeX or the {thebibliography}
+% environment.  Users who are hand-coding their references at the end
+% using a list environment such as {enumerate} can simply add another
+% item at the end, and it will be numbered automatically.
+
+\newcounter{lastnote}
+\newenvironment{scilastnote}{%
+\setcounter{lastnote}{\value{enumiv}}%
+\addtocounter{lastnote}{+1}%
+\begin{list}%
+{\arabic{lastnote}.}
+{\setlength{\leftmargin}{.22in}}
+{\setlength{\labelsep}{.5em}}}
+{\end{list}}
+
+
+% Include your paper's title here
+
+\title{\reporttitle} 
+
+
+% Place the author information here.  Please hand-code the contact
+% information and notecalls; do *not* use \footnote commands.  Let the
+% author contact information appear immediately below the author names
+% as shown.  We would also prefer that you don't change the type-size
+% settings shown here.
+
+\author
+{Fritz Louis Wilke\\
+\\
+\normalsize{\textbf{Faculty:} Computer Science} \\
+\normalsize{\textbf{Study Program:} M. Sc. Computer Science} \\
+\normalsize{\textbf{Module:} INF-MA-PR (graded)} \\
+\normalsize{\textbf{E-Mail:} fritz.wilke@tu-dresden.de} \\
+\normalsize{\textbf{Mat-Nr.:} 4536116}
+}
+
+% Include the date command, but leave its argument blank.
+
+\date{}
+
+
+
+%%%%%%%%%%%%%%%%% END OF PREAMBLE %%%%%%%%%%%%%%%%

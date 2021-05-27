@@ -23,7 +23,7 @@ This report is part of the \textit{Concurrent and Distributed Systems Lab} which
 
 The \ms{} is a set of complex numbers. It is mathematically defined by the recursive function $z_{n+1} = z_n^2 + c$ (1) with $z_0 = 0$ (2) for which $|z_n| < g$ holds. The threshold $g \in \mathbb{R}$ is a constant real number that is defined by $ g:= 2.0$ within this project. Complex numbers can be seen as a combination of two real numbers $r, i \in \mathbb{R}$ where $r$ represents the real part and $i$ the imaginary part. This representation simplifies the calculation of the \ms{} such that it only contains basic math.
 
-The task is to write a program that creates an image of the \ms{} for a given amount of $rows$, $cols$ (resolution) and maximum amount of iterations $nn$. The iteration limit is needed or else the program would never terminate. To create an image of the \ms{} it must be mapped to a two dimensional plane. This is done by projecting each row of the image to the imaginary part and each column of the image to the real part of the $c$ from equation (1). This results in $p_max = rows*cols$ pixels and thus equations that need to be solved withing the range of the iterations limit.\\
+The task is to write a program that creates an image of the \ms{} for a given amount of $rows$, $cols$ (resolution) and maximum amount of iterations $nn$. The iteration limit is needed or else the program would never terminate. To create an image of the \ms{} it must be mapped to a two dimensional plane. This is done by projecting each row of the image to the imaginary part and each column of the image to the real part of the $c$ from equation (1). This results in $p_{max} = rows*cols$ pixels and thus equations that need to be solved withing the range of the iterations limit.
 
 \noindent In summary, the creation of the image contains the following steps:
 \begin{enumerate}
@@ -38,11 +38,9 @@ The task is to write a program that creates an image of the \ms{} for a given am
 \subsection{Unoptimized Code Base}
 \label{ssec:code-base}
 
-An unoptimized version of the program was already implemented in \verb|C++|. This language was also used in the optimized program, but for evaluation purposes the program was also written in \verb|C| and \verb|C#|. The basic procedure of the unoptimized algorithm can be seen in Listing \ref{lst:pseudo-code-original}.
+An unoptimized version of the program was already implemented in \verb|C++|. This language was also used in the optimized program, but for evaluation purposes the program was also written in \verb|C| and \verb|C#|. The basic procedure of the unoptimized algorithm can be seen in Listing \ref{lst:pseudo-code-original}. It can be seen that this program is following the steps described in the \nameref{sec:introduction}. The unmodified code already contains one optimization in the while loop: The calculation may finish before reaching the iteration limit $nn$ if $|z_n| < 2.0$. This is due to the fact that once $z_n$ grows above the threshold $g := 2.0$ it will not shrink again. This saves a lot of calculations and therefore improves the overall performance of the program but it makes it especially hard to split up the work between multiple threads.
 
-\noindent It can be seen that this program is following the steps described in the \nameref{sec:introduction}. The unmodified code already contains one optimization in the while loop: The calculation may finish before reaching the iteration limit $nn$ if $|z_n| < 2.0$. This is due to the fact that once $z_n$ grows above the threshold $g := 2.0$ it will not shrink again. This saves a lot of calculations and therefore improves the overall performance of the program but it makes it especially hard to split up the work between multiple threads.
-
-\begin{lstlisting}[caption={Pseudo code of the unoptimized algorithm}, label={lst:pseudo-code-original}, captionpos=b, frame=tb, float]
+\begin{lstlisting}[caption={Pseudo Code of the unoptimized Algorithm}, label={lst:pseudo-code-original}, captionpos=b, frame=tb, float]
 input: uint rows, uint cols, uint nn
 output: char[]
 begin
@@ -65,9 +63,7 @@ begin
 end
 \end{lstlisting}
 
-The result is stored in an array of arrays of chars. To calculate it, the algorithm iterates over all rows and columns. The $z_n$ is then computed up to a maximum of $nn$ iterations. Depending on the amount of iterations needed, the pixel \verb|img[r][c]| is set. Finally, each character is printed to the standard output.
-
-The in Listing \ref{lst:pseudo-code-original} implemented algorithm has the complexity $\mathcal{O}(r*c*nn+r*(c+1))$ where $r$, $c$ and $nn$ are the given parameters for $rows$, $columns$ and \textit{iteration limit} respectively. The first part of the sum is derived from the actual calculation, the second from the printing of the result.
+The result is stored in an array of arrays of chars. To calculate it, the algorithm iterates over all rows and columns. The $z_n$ is then computed up to a maximum of $nn$ iterations. Depending on the amount of iterations needed, the pixel \verb|img[r][c]| is set. Finally, each character is printed to the standard output. The in Listing \ref{lst:pseudo-code-original} implemented algorithm has the complexity $\mathcal{O}(r*c*nn+r*(c+1))$ where $r$, $c$ and $nn$ are the given parameters for $rows$, $columns$ and \textit{iteration limit} respectively. The first part of the sum is derived from the actual calculation, the second from the printing of the result.
 
 
 \section{Optimization Strategies}
@@ -75,10 +71,10 @@ The in Listing \ref{lst:pseudo-code-original} implemented algorithm has the comp
 
 To improve the scalability of the shown algorithm, several strategies have been developed and tested. The hard part of developing scalable software (w.r.t. the amount of CPU cores) is to distribute the given workload equally between the CPU cores while still having a correct result in the end. The two most successful strategies are presented in the following sections.
 
-\subsection{Strategy I: Shared Counter}
+\subsection{Strategy I: Shared Variable}
 \label{ssec:strategy-i}
 
-This strategy is very simple and easy to implement as it only needs one shared variable $p_{next}$ between the \textit{worker threads} that holds the next pixel to work on. To prevent \textit{race conditions}, a \textit{mutex} is used for mutual exclusion when accessing the variable. Once a \textit{worker thread} needs more work, it locks the mutex, stores the content of $p_{next}$ in a thread local variable and increases $p_{next}$ by one. After that, the mutex is unlocked again to make $p_{next}$ available for other threads again.
+This strategy is very simple and easy to implement as it only needs one shared variable $p_{next}$ between the \textit{worker threads}, that holds the next pixel to work on. To prevent \textit{race conditions}, a \textit{mutex} is used for mutual exclusion when accessing the variable. Once a \textit{worker thread} needs more work, it locks the mutex, stores the content of $p_{next}$ in a thread local variable and increases $p_{next}$ by one. After that, the mutex is unlocked again to make $p_{next}$ available for other threads again.
 
 This strategy provides dynamic work load distribution between the \textit{worker threads} while offering \textit{fairness} and prevent \textit{starving}. It fits the problem of this lab because the workload of the calculation of the \ms{} cannot be split up in a trivial way. This is due to the fact that the iterations needed to calculate each pixel may vary between $1$ and $nn$.
 
@@ -104,11 +100,11 @@ This strategy provides dynamic work load distribution between the \textit{worker
 
 This strategy is substantially different to the first one. The work is not pulled by the worker threads themselves but pushed to them through queues, making this solution more complex. The idea is to have again one \textit{worker thread} for each CPU and additionally two \textit{I/O threads} that distribute and collect the work and results respectively.
 
-There is some overhead because of the I/O threads, which should decrease in relation to the amount of CPUs used. The performance reduction by the I/O threads is especially high when using one CPU because of the increased workload and cache usage of this single CPU. For each \textit{worker thread}, the \textbf{input worker} has an \textbf{input queue} and the \textbf{output worker} an \textbf{output queue}. If, for example, a worker provides a calculated pixel result in its output queue, only this cache line containing output results of this specific worker is invalidated. The only other thread that accesses this line is the output worker while the cache of the other workers stays valid since they do not know the queues of other \textit{workers}. The same applies for the input distribution. A graphical example of \textit{input-} and \textit{output queues} is shown in Figure \ref{fig:queues}. Note that these examples already contain some implementation specific details.
+There is some overhead because of the I/O threads, which should decrease in relation to the amount of CPUs used. The performance reduction by the I/O threads is especially high when using one CPU because of the increased workload and cache usage of this single CPU. For each \textit{worker thread}, the \textbf{input thread} has an \textbf{input queue} and the \textbf{output thread} an \textbf{output queue}. If, for example, a worker provides a calculated pixel result in its output queue, only this cache line containing output results of this specific worker is invalidated. The only other thread that accesses this line is the output worker while the cache of the other workers stays valid since they do not know the queues of other \textit{workers}. The same applies for the input distribution. A graphical example of \textit{input-} and \textit{output queues} is shown in Figure \ref{fig:queues}. Note that these examples already contain some implementation specific details.
 
 The input worker will iterate over all input queues of the worker threads, trying to fill them up, while the output worker keeps emptying the output queues. Having separate I/O queues for each thread involves one major advantage: no locking, no mutexes and no semaphores needed. This is possible because the queues are \textbf{unidirectional} and due to the \textbf{1:1 relation} between the I/O threads and the queues' worker thread. An input queue is always filled by the one input thread and emptied by a single worker thread, the output thread gets filled by a single worker and emptied by the output thread.
 
-This strategy be scalable for the same reasons as \hyperref[ssec:strategy-i]{Strategy I}, but it also has some more advantages. The most important one is that this strategy does not need simultaneous access of many threads on the same shared variable. This can be a real problem when heaving a lot of threads. Another benefit is that the queues have a small storage capacity so that the \textit{worker threads} should always have more workload available that they can use without locking/blocking.
+This strategy is scalable for the same reasons as \hyperref[ssec:strategy-i]{Strategy I}, but it has some additional advantages. The most important one is that this strategy does not need simultaneous access of many threads on the same shared variable. This can be a real problem when heaving a lot of threads.
 
 \section{Implementation}
 \label{sec:implementation}
@@ -118,21 +114,19 @@ This section presents the most important implementation details of the optimized
 \subsection{General Improvements}
 \label{ssec:general-improvements}
 
-Several improvements have been made on the code. The following affect both, the single-threaded as well as the multi-threaded program.
-
-The one with the biggest effect is the simplification of the calculations. The while loop (line 11 in \hyperref[lst:pseudo-code-original]{Listing 1}) of the \ms{} calculation is the part of the program where the most computation time is spent. Optimizing this loop will have the biggest effect on the overall performance of the program.
+The improvement with the biggest effect is the simplification of the calculations. The while loop (line 11 in \hyperref[lst:pseudo-code-original]{Listing 1}) of the \ms{} calculation is the part of the program where the most computation time is spent. Optimizing this loop will have the biggest effect on the overall performance of the program.
 
 The following improvements have been made on the code for the \ms{} calculation:
 \begin{itemize}
     \item Substituting the addition of the freshly created complex number by a precalculated, per-pixel constant $c$
     \item Work directly on floats instead of using the class \verb|std::complex<float>|
     \item Optimizing the comparison $|z_n| < 2.0$ by squaring. The resulting comparison is $Re(z_n)^2 + Im(z_n)^2 < 4.0$
-    \item Storing the already squared real and imaginary part of the above term and reusing them for calculating $z_n^2$ in the next calculation
+    \item Storing the already squared real and imaginary part of the above term and reusing them for calculating $z_n^2$ in the step
 \end{itemize}
 
 Further, smaller optimizations are:
 \begin{itemize}
-    \item Using one block of memory/one array instead of an array of arrays to store the resulting image in. This should improve cache access due to locality
+    \item Using one block of memory/one array instead of an array of arrays to store the resulting image in. This might improve cache access due to locality
     \item Using \verb$scanf()$, \verb$printf()$, \verb$fwrite()$ and \verb$fputc()$ instead of the \verb$std::cin$ and \verb$std::cout$ streams
     \item Using structs instead of any variables for the calculations and I/O management. The structs are aligned to start in a new cache line (at 64byte) and are padded to prevent any other threads to invalidate it
 \end{itemize}
@@ -161,7 +155,7 @@ To provide maximum efficiency, the \textit{input-} and \textit{output queues} ha
 
 The \textit{output} queues are implemented in a similar way, but consist of 8 \verb$<uint32_t, char>$ pairs that represent one pixel value for a specific pixel number. To show that a field of the queue is empty, the pixel number is again set to \verb$UINT32_MAX$. A \textit{worker thread} fills up its \textit{output queue} from the back until it is full, the \textit{output worker} thread keeps emptying from the beginning. An example of the \textit{queues} can be seen in Figure \ref{fig:queues}. Note that they are shown with a length of 6 instead of the 16 and 8, which are the lengths used in the implementation.
 
-Each beginning and end of a queue is stored in a thread local variable since it is only \textbf{written} by a single thread and \textbf{read} by another single thread. Thus it does not need any synchronization for them. Note that there still is implicit synchronization when reading or writing a queue depending on the pixel number that is stored at that queue position.
+Each beginning and end of a queue is stored in a thread local variable since the queue is only \textbf{written} by a single thread and \textbf{read} by another single thread. Thus it does not need any synchronization for them. Note that there still is implicit synchronization when reading or writing a queue depending on the pixel number that is stored at that queue position.
 
 An identical implementation is done in C\# as well. The implementation only differs in one important aspect: on linux, it is not possible to bind a thread to a specific CPU (CPU affinity) using \textit{.Net}. We chose C\# to see how an interpreter copes with the given task.
 
@@ -227,7 +221,7 @@ An identical implementation is done in C\# as well. The implementation only diff
         
         \midrule
         
-        \multirow{3}{*}[-0.35em]{C\#} &
+        \multirow{2}{*}[-1em]{C\#} &
         0: &
         Unoptimized &
         63332 &
@@ -255,9 +249,9 @@ An identical implementation is done in C\# as well. The implementation only diff
 
 Hereinafter, the implementation described in the previous section is evaluated. The evaluation results can be seen in table \ref{tab:evaluation-results}. Both, the C++ version and the C\# version have been measured and analyzed independently. Each version has the runtime of the unoptimized implementation on top, which is used as the \textbf{base times} for the speedup calculation. The unoptimized C\# code has been implemented as close as possible to the original, unmodified C++ code. As a proof, each measurement has its own \textbf{Git hash} and \textbf{evaluation log} appended, together with a hyperlink to the source code and log file respectively.
 
-The runtimes, as well as the speedups are the measurements of the programs with 56 concurrent threads. Note that the \textbf{base time} used for the speedup calculation is always the runtime with 1 thread. This applies for the single threaded, unoptimized version, too, where the runtime results vary up to 13\% due to the scheduling of each run. Using these base times, the absolute speedup of the programs with 56 threads can be seen in table \ref{tab:evaluation-results}. In contrary, the relative speedup is calculated with respect to the runtime of the \textbf{same version} and evaluation, utilizing only one thread.
+The runtimes, as well as the speedups are the measurements of the programs with 56 concurrent threads. Note that the \textbf{base time} used for the speedup calculation is always the runtime with 1 thread. Using these base times, the absolute speedup of the programs with 56 threads can be seen in table \ref{tab:evaluation-results}. In contrary, the relative speedup is calculated with respect to the runtime of the \textbf{same version} and evaluation, utilizing only one thread.
 
-The final, optimized C++ is 716 times faster than the single threaded, unmodified program. Its relative speedup with 56 threads is 73, which implies 100.42\% parallel code using Amdahl's law. The parallel code amount is even higher for 28 threads, being at 101.30\%. Obviously, this is not possible and does not represent the real parallel code part which cannot be greater than 100\%. This effect can be explained with the increased workload due to the \textit{input} and \textit{output thread}. It was already mentioned in section \ref{ssec:strategy-ii} that the \textit{I/O threads} might have a negative effect on the performance, especially for environments with low thread concurrency. The overall performance improvement resulting from the simplified calculations described in section \ref{ssec:general-improvements} yields in runtimes (at 56 threads) which are more than 8 times lower than the ones of the previous version. Due to the holistic runtime reduction, the relative speedup of the simplified version is a bit lower than before.
+The final, optimized C++ program is 716 times faster than the single threaded, unmodified one. Its relative speedup with 56 threads is 73, which implies 100.42\% parallel code using Amdahl's law. The parallel code amount is even higher for 28 threads, being at 101.30\%. Obviously, this is not possible and does not represent the real parallel code part which cannot be greater than 100\%. This effect can be explained with the increased workload due to the \textit{input} and \textit{output thread}. It was already mentioned in section \ref{ssec:strategy-ii} that the \textit{I/O threads} might have a negative effect on the performance, especially for environments with low thread concurrency. The overall performance improvement resulting from the simplified calculations described in section \ref{ssec:general-improvements} (version 2) yields in runtimes (at 56 threads) which are more than 8 times lower than the ones of the previous version (version 1). Due to the holistic runtime reduction, the relative speedup of the simplified version is a bit lower than before.
 
 It can be seen in table \ref{tab:evaluation-results} that the C\# version runs a bit slower than the C++ program. This can have several causes such as the missing \textit{CPU affinity} of the worker threads and the usage of an interpreter language. Interestingly, the unoptimized version is a lot faster than the equivalent C++ version. The faster \textbf{base time} also affects the absolute speedup, which is only 146. The relative speedup however is as large as 1798. The optimized code runs extremely slow on one thread, resulting in a runtime of more than 13 minutes. It seems that the \textit{I/O threads} occupy too much CPU time in relation to the \textit{worker threads}. Not surprisingly, the parallel code amount is as high as 103.62\% and 101.76\% for 28 and 56 threads respectively using Amdahl's law.
 
