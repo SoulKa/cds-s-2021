@@ -2,14 +2,14 @@ https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c7
 c4e204b77e805787b6aaa5fb318883e5395b5320
 
 program; run; cpus; duration;
-mopp-2017-t3-mandelbrot-set; 1; 1; 56334715
-mopp-2017-t3-mandelbrot-set; 1; 2; 56922613
-mopp-2017-t3-mandelbrot-set; 1; 4; 56300359
-mopp-2017-t3-mandelbrot-set; 1; 8; 56317834
-mopp-2017-t3-mandelbrot-set; 1; 14; 56440845
-mopp-2017-t3-mandelbrot-set; 1; 16; 56849020
-mopp-2017-t3-mandelbrot-set; 1; 24; 56285330
-mopp-2017-t3-mandelbrot-set; 1; 28; 56331348
-mopp-2017-t3-mandelbrot-set; 1; 32; 56430271
-mopp-2017-t3-mandelbrot-set; 1; 48; 56234611
-mopp-2017-t3-mandelbrot-set; 1; 56; 56461136
+mopp-2018-t3-himeno-float64; 1; 1; 188411360
+mopp-2018-t3-himeno-float64; 1; 2; 213364566
+mopp-2018-t3-himeno-float64; 1; 4; 206631070
+mopp-2018-t3-himeno-float64; 1; 8; 215842820
+mopp-2018-t3-himeno-float64; 1; 14; 206278575
+mopp-2018-t3-himeno-float64; 1; 16; 206692296
+mopp-2018-t3-himeno-float64; 1; 24; 216049012
+mopp-2018-t3-himeno-float64; 1; 28; 207135978
+mopp-2018-t3-himeno-float64; 1; 32; 206728647
+mopp-2018-t3-himeno-float64; 1; 48; 194313080
+mopp-2018-t3-himeno-float64; 1; 56; 207050313
