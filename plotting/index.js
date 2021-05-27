@@ -88,6 +88,7 @@ async function main() {
         const log = fs.readFileSync(logFilepath, "utf8");
         let scalingPlotname = "";
         let alPlotname = "";
+        let scalingAxisRange;
 
         // extract data
         /** @type {Map<number, number[]>} Cores => Times */
@@ -95,6 +96,7 @@ async function main() {
         log.split("\n").map( l => l.split(";").map( w => w.trim() ) ).forEach( l => {
             if (scalingPlotname === "" && l[0].startsWith("title=")) scalingPlotname = l[0].replace("title=", "");
             if (alPlotname === "" && l[0].startsWith("title-AL=")) alPlotname = l[0].replace("title-AL=", "");
+            if (l[0].startsWith("range=")) scalingAxisRange = JSON.parse(l[0].replace("range=", ""));
             if (l.length !== 4 || isNaN(Number.parseInt(l[3]))) return;
             if (data.size === 0 && scalingPlotname === "") scalingPlotname = l[0];
             const cores = Number.parseInt(l[2]);
@@ -156,7 +158,8 @@ async function main() {
                         type: "log"
                     },
                     yaxis: {
-                        title: "<b>Speedup</b>"
+                        title: "<b>Speedup</b>",
+                        range: scalingAxisRange
                     },
                     title: `<b>${scalingPlotname}</b>`,
                     margin: MARGIN,

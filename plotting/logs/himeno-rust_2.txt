@@ -3,6 +3,9 @@ https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c7
 Rust version with atomic variable
 
 title=Scaling of Rust Float 64 Version
+title-AL=Scaling of Rust Float 64 Version
+range=[0, 18]
+
 program; run; cpus; duration;
 mopp-2018-t3-himeno-float64; 1; 1; 112150043
 mopp-2018-t3-himeno-float64; 1; 2; 57553814

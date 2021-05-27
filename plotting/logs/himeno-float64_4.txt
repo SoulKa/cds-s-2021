@@ -2,7 +2,8 @@ https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c7
 43c3df53ecea64e10961dca8c41823ed766cba4c
 2nd version with atomic
 title=Scaling of C++ Float 64 Version
-title-AL=Amdahl's Law for Meas. of C++ F64 Version
+title-AL=Scaling of C++ Float 64 Version
+range=[0, 18]
 
 program; run; cpus; duration;
 mopp-2018-t3-himeno-float64; 1; 1; 333349836
