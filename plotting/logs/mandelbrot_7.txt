@@ -3,6 +3,7 @@ e0e78a6fff88e4338b6a0ca939ba820f52ae7f37
 
 Mandelbrot Refactored.
 title=Scaling of C++ Version 1
+svg
 
 program; run; cpus; duration;
 mopp-2017-t3-mandelbrot-set; 1; 1; 182690982

@@ -5,6 +5,7 @@ Rust version with atomic variable
 title=Scaling of Rust Float 64 Version
 title-AL=Scaling of Rust Float 64 Version
 range=[0, 18]
+svg
 
 program; run; cpus; duration;
 mopp-2018-t3-himeno-float64; 1; 1; 112150043

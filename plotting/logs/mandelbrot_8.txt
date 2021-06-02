@@ -3,6 +3,7 @@ https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c7
 
 Version: 2nd of the reworked Mandelbrot version. Simplified math
 title=Scaling of C++ Version 2
+svg
 
 program; run; cpus; duration;
 mopp-2017-t3-mandelbrot-set; 1; 1; 19325120

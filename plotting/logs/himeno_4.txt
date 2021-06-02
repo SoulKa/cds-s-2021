@@ -4,6 +4,7 @@ https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c7
 title=Scaling of C++ Float 32 Version
 title-AL=Scaling of C++ Float 32 Version
 range=[0, 18]
+svg
 
 program; run; cpus; duration;
 mopp-2018-t3-himeno; 1; 1; 352771595

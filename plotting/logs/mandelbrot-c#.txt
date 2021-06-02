@@ -1,6 +1,7 @@
 https://cds-lab.pages.se-gitlab.inf.tu-dresden.de/cds-s-2021/cds-website/logs/c75cb293de1ed36a6bb94494fd0b3b8f3b23c2290f5a165617ce8b8dc5681fe8/2021-05-06T20:17:57+02:00.html
 3ab6c9f1111b224f0546b0ccb107a86ab7786720
 title=Scaling of C# Version 2
+svg
 
 program; run; cpus; duration;
 mopp-2017-t3-mandelbrot-set; 1; 1; 812247180

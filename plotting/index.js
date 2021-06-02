@@ -58,7 +58,7 @@ async function createPlot( figure, filepath ) {
         plotly.getImage(
             figure,
             {
-                format: "pdf",
+                format: path.extname(filepath).replace(".", ""),
                 width: 400,
                 height: 400
             },
@@ -83,12 +83,11 @@ async function main() {
         console.log(`Processing logs for ${filename} ...`);
         const logFilepath = path.join(LOG_DIR, filename+".txt");
         filename = filename.replace("#", "s");
-        const scalingPlotFilepath = path.join(PLOT_DIR, filename+"-scaling.pdf");
-        const parallelCodePlotFilepath = path.join(PLOT_DIR, filename+"-amdahls-law.pdf");
         const log = fs.readFileSync(logFilepath, "utf8");
         let scalingPlotname = "";
         let alPlotname = "";
         let scalingAxisRange;
+        let filetypes = ["pdf"];
 
         // extract data
         /** @type {Map<number, number[]>} Cores => Times */
@@ -97,6 +96,7 @@ async function main() {
             if (scalingPlotname === "" && l[0].startsWith("title=")) scalingPlotname = l[0].replace("title=", "");
             if (alPlotname === "" && l[0].startsWith("title-AL=")) alPlotname = l[0].replace("title-AL=", "");
             if (l[0].startsWith("range=")) scalingAxisRange = JSON.parse(l[0].replace("range=", ""));
+            if (l[0] === "svg") filetypes.push("svg");
             if (l.length !== 4 || isNaN(Number.parseInt(l[3]))) return;
             if (data.size === 0 && scalingPlotname === "") scalingPlotname = l[0];
             const cores = Number.parseInt(l[2]);
@@ -104,6 +104,10 @@ async function main() {
             data.get(cores).push(Number.parseInt(l[3]));
         });
         if (scalingPlotname === "") scalingPlotname = filename;
+
+        // create filepath(s)
+        const scalingPlotFilepaths = filetypes.map( f => path.join(PLOT_DIR, filename+"-scaling")+"."+f );
+        const parallelCodePlotFilepaths = filetypes.map( f => path.join(PLOT_DIR, filename+"-amdahls-law")+"."+f );
 
         // check if valid logfile
         if (data.size === 0) {
@@ -137,7 +141,7 @@ async function main() {
         };
 
         // create scaling plot
-        if (!fs.existsSync(scalingPlotFilepath)) await createPlot(
+        for (const scalingPlotFilepath of scalingPlotFilepaths) if (!fs.existsSync(scalingPlotFilepath)) await createPlot(
             {
                 data: [{
                     x,
@@ -169,7 +173,7 @@ async function main() {
         );
 
         // create amdahl's law plot
-        if (!fs.existsSync(parallelCodePlotFilepath)) await createPlot(
+        for (const parallelCodePlotFilepath of parallelCodePlotFilepaths) if (!fs.existsSync(parallelCodePlotFilepath)) await createPlot(
             {
                 data: [
                     {
@@ -239,4 +243,4 @@ async function main() {
     }
 
 }
-setImmediate(main);
+setImmediate(() => main().catch(console.error));
